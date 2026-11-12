@@ -1,4 +1,55 @@
-# GraphFold — a semiring-parametric theory of graph folds in Lean 4
+# GraphFold — a broken formal  semiring-parametric theory of graph folds
+
+This repository purportedly presents a Lean-checked formalization of
+abstract graph folds; three computable instantiations of it over very
+different semirings; and an interactive HTML tool that supports graph
+editing, execution of any of the three implementations, and a tool for
+graphical animation of the steps of the fold, which vary depending on
+which application one chooses.
+
+This entire presentation was vibe-coded in two to three hours. I did 
+not check the proofs because Lean 4 is so good at that! So am I done?
+Put on your hard hat and start to think like an engineering: ask the
+most vital question of all: what could go wrong?
+
+The prominent researcher in formalization of resaerch mathematics,
+Kevin Buzzard, wrote a lovely short piece answering this question.
+Several things can go wrong, among the most serious of which is the
+incorrect formalization of what is to be proved in the first place.
+This repo presents a concrete case study.
+
+The formalization in this case provides two execution paths by which
+an input graph reaches the core algorithm to be solved: one path is
+from the interactive web-based UI through compiled Lean executables,
+one for each application. The second is through the importable Lean
+4 library that our build also produces for other down-stream uses.
+
+The problem is that while a check of a crucial acyclicity check was
+present in the graphic input *parser* used by the interactive took,
+it was missing further downstream, including in the separate library
+API implementation. The upshot is that the core computation as built
+will happily accept a graph with cycles, will not issue and error, and
+will return correct looking results.
+
+The AI made several significant errors here. First, it implemented the
+crucial acyclicity constraint that makes the generic fold actuall work
+correctly was implemented where? In the user input parser of the user
+interface to the main computation. What! That's completely wrong, as it
+moves that condition from the actual statement of the theorem that is to
+be proved into a completely ancillary part of the overall system, which
+is to say that the AI incorrectly formalized the main theorem itself.
+
+This repo is intended as a pedagogical resource. The mathematics are not
+complicated for a person familiar with basic abstract algebra and abstract
+folds algorithms. The rest of this README is written as if I'd concluded
+that all was well with what the AI produced. Toward the end we present a
+few more details on the specific failure.
+
+It's strong recommended to read [Kevin Buzzard's nice summary of what
+can go wrong even when it's proved in Lean](https://xenaproject.wordpress.com/2026/11/12/and-the-proof-is-checked-in-lean/) before continuing with the rest of the story here. Please read that then continue here to see how compelling a vibe-coded mathematical theory auto-formalized in Lean can appear yet still harbor fatal errors.
+
+Can you fix the error? How will you know then that you've really got it all right?
+Seduced by the remarkable potential of AI-driven auto-*verification* forget, is that *verification* is only half the problem, the other being *validation*. Verification asks and answers the question, *did I build the thing right*, whereas *validation* asks, *did I build the right thing.* Seeing every last proof go through without any human effort is *verification*. Making sure that what's being proved is right is the critical task of *validation*. And what that comes down to today is human as well as AI checking of the statements of the theorems being proved. Being able to understand and check that the specifications themselves are valid is an obligation that cannot be overlooked in any serious scholarly or applied work resting on AI coding in Lean. 
 
 ## Quick start
 
@@ -579,37 +630,18 @@ proofs of the right proposition — the right specification.
 
 ### Further investigation showed
 
-Not every thread pulled on this turned out to be a gap, and the one real
-gap turned out to have a precise, citable root cause — both worth reporting
-alongside the original finding.
+Further investigation shows there to be one critical gap: the autoformalization
+of one original publication turned out to have a specific formalization error of
+omission. Mehryar Mohri's "Semiring Frameworks and Algorithms for Shortest-Distance Problems" (2002) always defines the target quantity — the shortest distance itself — independently of any algorithm, as a sum over the actual set of paths. He only ever equates an algorithm's output to that target *under an explicit hypothesis* (his Corollary 2: the graph is acyclic).
 
-First, a worry that looked serious on paper resolved cleanly: does the
-"sound" theorem's underlying relation, `Derives`, actually pin down a
-*unique* answer, or could a fixed input be compatible with multiple,
-inconsistent "correct" outputs? It's provably unique — `Derives.unique` in
-`whatCanGoWrongSpecGaps.lean` proves it, in term mode, depending only on
-the standard `propext` axiom. That worry was unfounded, and it's useful to
-know it's unfounded rather than just unaddressed.
-
-Second, the cyclic-graph bug itself traces to a precise formalization error
-once checked against the literature this project's own Historical Context
-section already cites. Mehryar Mohri's "Semiring Frameworks and Algorithms
-for Shortest-Distance Problems" (2002) always defines the target quantity
-— the shortest distance itself — independently of any algorithm, as a sum
-over the actual set of paths, and only ever equates an algorithm's output
-to that target *under an explicit hypothesis* (his Corollary 2: the graph
-is acyclic). GraphFold has no analogue of that independent target anywhere
+GraphFold simply lacks a formalization of that independent target
 in `Core.lean`. `Derives`/`Satisfies` only assert that two renderings of
-`specStep`'s own recursive unfolding agree with each other — a claim about
-the algorithm's self-consistency, not its correctness against an
-independent mathematical quantity. That's a strictly weaker kind of
-theorem than the literature's, and it's weaker in exactly the place that
-matters: with no independent target, there is nothing for a cyclic input's
-output to be wrong *relative to*, which is exactly why the soundness
-proofs raise no objection to one. The `Algebra` laws themselves are not
-the error — the literature's own proof confirms acyclicity alone needs no
-extra algebraic structure — the error is the missing hypothesis and the
-missing independent specification, both of which the cited literature
-states as a matter of course.
-
-OK, now, over to you. What's the fix?
+`specStep`'s recursive unfolding agree with each other — a claim about
+the algorithm's self-consistency, whereas what's needed is a proof of
+correctness against an independent mathematical theory. Then with no
+independent target, there is nothing for a cyclic input's output to be
+wrong *relative to*. The `Algebra` laws themselves are not erroneous here.
+The error is the dropping during machine formalization of an essential
+hypothesis and an missing independent specification. They're clear in
+the peer-reviewed publication but were just dropped by Claude when it
+ingested that earlier work.
