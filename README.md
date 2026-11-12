@@ -53,12 +53,16 @@ To proceed follow the easy Quick Start instructions below to bring
 up our systems. Open the browser tool. It gives you a small graph to
 start with, which you can edit directly. When read, push one of the
 three buttons to run one of the algorithms to produce an answer for
-your graph, then step through the stored trace of that execution (all
-in verified Lean 4) to see precisely how the algorithm arrived at its
-answer. Once you've done that, come back here, be seduced by the real
-magic of AI + Lean, and then have eyes opened by seeing exactly what
-can go wrong even on a small-scale auto-formaliation and verified
-implementation experiment.
+your graph, then step through the stored trace of that execution to
+see visually how the algorithm works at each step to reduce a whole
+graph to the require result.
+
+Once you've done all that, come back here, be seduced by the magic
+of AI + Lean, and then have eyes opened by seeing exactly what can
+and did go wrong even on a small-scale auto-formaliation and verified
+implementation effort. The walk-away message: verification of code
+against a specification is only half the battle. The other half is
+the *validation* of the specification itself.
 
 Enjoy!
 
