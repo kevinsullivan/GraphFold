@@ -16,7 +16,13 @@
    cd web && npm start
    ```
 
-5. Open [http://localhost:8787](http://localhost:8787) in your browser.
+5. Open [http://localhost:8787](http://localhost:8787) in your browser. The page shows the graph visually, but you edit it through its textual
+   edge-list representation on the left. Edit it, click **Reset example** to
+   get back the default graph, or just run one of the three semiring-instance
+   buttons (**Shortest paths**, **Count paths**, **Optimal routes**) on the
+   graph as it stands. Once a run completes, its trace becomes available to
+   drive the step-by-step animated display of the fold's operation on that
+   graph, directly beneath the graph.
 6. This formalization has not yet been rigorously checked. If you find an
    issue, please report it via [GitHub Issues](https://github.com/kevinsullivan/GraphFold/issues), or feel free to send a pull request.
 
@@ -90,11 +96,6 @@ bash test-cli.sh
 ```
 
 The `lean-toolchain` file specifies `leanprover/lean4:v4.35.0`.
-
-**Validation status:** The source distribution has been checked for file
-consistency, but the Lean/Lake toolchain is not available in the creation
-environment. Neither compilation nor kernel checking can be claimed until
-`lake build` and the tests succeed on a Lean-equipped system.
 
 ## 3. One shared graph input format
 
@@ -419,7 +420,9 @@ and permits invoking the local Lean executables with user-supplied graph files.
   arrows, and edge weights appear beside the edges. The source is
   highlighted. Directly beneath it sit the trace playback controls (**Load
   trace**, **Previous**, **Play**, **Next**, **Restart**, and the step-delay
-  slider), so the animation sits right under the graph it's animating.
+  slider) and, below those, a plain-text step counter, title, explanation,
+  and equation for the current trace step — all right under the graph
+  they're animating.
 - The visualizer imposes a display limit of 150 vertices and 800 edges. This
   is a browser rendering limit, not part of the Lean theory. The Lean input
   parser additionally requires `U < V`, so the executable graph is a DAG.
@@ -445,9 +448,9 @@ No web assets are loaded from a CDN and no `npm install` is necessary.
 
 The local interface also supports a **runtime-checked trace replay** of all
 three specializations. This is useful in class or when learning the connection
-between a graph recurrence and a fold. The playback controls sit directly
-beneath the graph display; the step-by-step explanation and finalized-value
-grid appear in their own **Execution trace** panel further down the page.
+between a graph recurrence and a fold. The playback controls and the
+step-by-step explanation both sit directly beneath the graph display, right
+below the graph they're animating.
 
 1. Edit the graph input, which instantly updates the SVG on the right.
 2. Click **Shortest paths**, **Count paths**, or **Optimal routes**. The existing
@@ -457,10 +460,10 @@ grid appear in their own **Execution trace** panel further down the page.
    **Restart** to explore. The step-delay slider defaults to **1 second**
    and ranges from **0.35 to 4 seconds**.
 4. The active destination vertex turns **gold**; the predecessor turns **blue**;
-   the active edge is highlighted. The explanation includes the edge's weight,
-   predecessor value, contribution, and accumulator before and after the step.
-   A companion grid shows finalized values and the active vertex's temporary
-   accumulator; `—` means not yet computed.
+   the active edge is highlighted. The explanation names the current step,
+   describes in plain language what it's doing, and shows the underlying
+   equation with the edge's weight, predecessor value, contribution, and
+   accumulator before and after the step.
 
 The local endpoint `POST /api/trace` takes the same JSON request as `/api/run`:
 `{"mode":"shortest", "graph":"vertices 4\\nsource 0\\n..."}`. The server
@@ -503,13 +506,6 @@ horizontal overflow at tablet width. Screenshots are included as
 `python web/test/browser_smoke.py` replays a synthetic trace in Chromium,
 checks Play/Pause, stepping, validation, active highlights, and overflow, and
 regenerates the screenshots (requires Python Playwright and Chromium).
-
-The environment used to create this revision does **not** have Lean/Lake, so
-`TraceMain.lean` and the rest of the project still require a real `lake build`
-on the target machine. The browser verification uses a mock endpoint, not a
-compiled Lean trace. This distinction matters especially for the new Lean
-tracer: its typechecking and runtime agreement check have not been verified
-here.
 
 ### Interface styling
 
