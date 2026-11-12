@@ -1,6 +1,7 @@
 # A four-vertex DAG with five weighted directed edges.
 vertices 4
 source 0
+# edge: source destination weight
 edge 0 1 2
 edge 0 2 5
 edge 1 2 3

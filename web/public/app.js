@@ -167,7 +167,6 @@ async function evaluate(mode) {
   invalidateTrace();
   selectedMode = mode;
   document.querySelector('#trace-prepare').disabled = false;
-  document.querySelector('#animation-mode').textContent = modeLabels[mode].toUpperCase();
   const serial = ++requestSerial;
   buttons.forEach(b => b.disabled = true);
   const shortest = mode === 'shortest';
@@ -225,11 +224,6 @@ document.querySelector('#run-paths').addEventListener('click', () => evaluate('p
 document.querySelector('#run-optimal').addEventListener('click', () => evaluate('optimal'));
 
 /* --- Trace replay: no graph algorithm, aggregation, or semiring math here. --- */
-const modeLabels = {
-  shortest: 'Shortest paths · min / plus',
-  paths: 'Path counting · plus / times',
-  optimal: 'Cost spectra · concatenate / extend'
-};
 const traceControls = {
   prepare: document.querySelector('#trace-prepare'),
   previous: document.querySelector('#trace-prev'),
@@ -241,9 +235,7 @@ const traceControls = {
   counter: document.querySelector('#trace-counter'),
   title: document.querySelector('#trace-title'),
   explanation: document.querySelector('#trace-explanation'),
-  equation: document.querySelector('#trace-equation'),
-  values: document.querySelector('#trace-value-grid'),
-  progress: document.querySelector('#trace-progress-fill')
+  equation: document.querySelector('#trace-equation')
 };
 
 /** Strictly parse the transport protocol emitted by `GraphFold.Trace.encode`. */
@@ -282,8 +274,6 @@ function invalidateTrace() {
   traceControls.title.textContent = 'No trace loaded';
   traceControls.explanation.textContent = 'Run an algorithm, then load its trace.';
   traceControls.equation.textContent = 'F(v) = b(v) ⊕ Σ(F(u) ⊗ w(u,v))';
-  traceControls.progress.style.width = '0%';
-  traceControls.values.replaceChildren();
   updateHighlights(null);
 }
 
@@ -308,7 +298,7 @@ function updateHighlights(event) {
 }
 
 /** Mode-specific, plain-language descriptions of what each trace event means. */
-function startExplanation(mode, event) {
+export function startExplanation(mode, event) {
   const isSource = mode === 'shortest' ? event.base !== 'INF' : event.base !== '0' && event.base !== '[]';
   if (mode === 'shortest') return isSource
     ? `Vertex ${event.vertex} is the source, so its running best distance starts at 0.`
@@ -321,7 +311,7 @@ function startExplanation(mode, event) {
     : `Vertex ${event.vertex} starts with an empty cost spectrum []; incoming edges will append to this list.`;
 }
 
-function edgeExplanation(mode, event) {
+export function edgeExplanation(mode, event) {
   if (mode === 'shortest') {
     const reachable = event.prior !== 'INF';
     if (!reachable) return `Vertex ${event.predecessor} is still unreachable (∞), so this edge offers no usable distance; the running best stays ${event.before}.`;
@@ -333,11 +323,13 @@ function edgeExplanation(mode, event) {
   return `Vertex ${event.predecessor}'s reached costs (${event.prior}) each get this edge's weight (${event.weight}) added, giving the extended costs ${event.contribution}. Append that list to the running spectrum ${event.before} to get ${event.after}.`;
 }
 
-function finishExplanation(mode, event) {
+export function finishExplanation(mode, event, source) {
   if (mode === 'shortest') return event.value === 'INF'
     ? `Vertex ${event.vertex} is unreachable from the source: no incoming edge ever produced a finite distance.`
     : `Vertex ${event.vertex}'s shortest distance is finalized at ${event.value}; later vertices can now use this value.`;
-  if (mode === 'paths') return `Vertex ${event.vertex} has ${event.value} total path(s) from the source; later vertices can now use this count.`;
+  if (mode === 'paths') return event.vertex === source
+    ? `Vertex ${event.vertex} is the source: its count of ${event.value} is just the trivial empty path that starts and ends here.`
+    : `Vertex ${event.vertex} has ${event.value} total path(s) from the source; later vertices can now use this count.`;
   return `Vertex ${event.vertex}'s full cost spectrum is finalized as ${event.value} — its minimum entry and how often it occurs give the optimal cost and the number of tied optimal routes.`;
 }
 
@@ -345,7 +337,6 @@ function paintTrace() {
   if (!traceEvents.length || !graph) return;
   const current = traceEvents[traceIndex];
   traceControls.counter.textContent = `STEP ${traceIndex+1} OF ${traceEvents.length}`;
-  traceControls.progress.style.width = `${100*(traceIndex+1)/traceEvents.length}%`;
   traceControls.previous.disabled = traceIndex === 0;
   traceControls.next.disabled = traceIndex >= traceEvents.length-1;
   traceControls.play.disabled = traceIndex >= traceEvents.length-1;
@@ -363,21 +354,8 @@ function paintTrace() {
     traceControls.equation.textContent = `${current.prior} ${operators[1]} ${selectedMode === 'paths' ? '1' : current.weight} = ${current.contribution}    ·    ${operators[0]}(${current.before}, ${current.contribution}) = ${current.after}`;
   } else {
     traceControls.title.textContent = `Vertex ${current.vertex} · finalized`;
-    traceControls.explanation.textContent = finishExplanation(selectedMode, current);
+    traceControls.explanation.textContent = finishExplanation(selectedMode, current, graph.source);
     traceControls.equation.textContent = `F(${current.vertex}) = ${current.value}`;
-  }
-  const finalized = Array(graph.count).fill('—');
-  for (let i=0; i<=traceIndex; i++) if (traceEvents[i].kind === 'finish') finalized[traceEvents[i].vertex] = traceEvents[i].value;
-  if (current.kind === 'start') finalized[current.vertex] = current.base;
-  if (current.kind === 'edge') finalized[current.vertex] = current.after;
-  traceControls.values.replaceChildren();
-  for (let v=0; v<graph.count; v++) {
-    const item = document.createElement('div');
-    item.className = 'trace-value' + (current.vertex === v ? ' current' : '');
-    const vertex = document.createElement('span'); vertex.textContent = `v${v}`;
-    const value = document.createElement('strong'); value.textContent = finalized[v];
-    item.append(vertex,value);
-    traceControls.values.append(item);
   }
 }
 

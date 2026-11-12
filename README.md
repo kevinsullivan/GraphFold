@@ -2,7 +2,7 @@
 
 ## Quick start
 
-1. Open any `.lean` file in VS Code. This triggers a one-time download of the Lean toolchain and dependencies — wait for it to finish before continuing.
+1. Open this folder in VS Code. It will prompt you to install the recommended **Lean 4** extension if you don't already have it — accept that prompt. (If you missed or dismissed it, open the Extensions panel — **Cmd+Shift+X** on macOS, **Ctrl+Shift+X** on Windows/Linux — search for "Lean 4", and install it manually.) Then open any `.lean` file; this triggers a one-time download of the Lean toolchain and dependencies — wait for it to finish before continuing.
 2. Open a terminal in VS Code and run:
 
    ```sh
@@ -313,8 +313,11 @@ those rows; the three adapters independently assign their bases and edge values.
 ## 5. Proof architecture and explicit typing
 
 `specStep` uses a **right fold** of incoming edge contributions. Each concrete
-`step` uses a **left fold**. The generic `foldl_eq_foldr` theorem proves their
-agreement from monoid laws. Each independent bridge constructs a `Derives`
+`step` uses a **left fold**: unlike `foldr`, which combines the rightmost
+element first and works inward (`f x1 (f x2 (... (f xn init))))`), `foldl`
+walks the list left to right, combining the accumulator so far with each next
+element (`f (... (f (f init x1) x2) ...) xn`). The generic `foldl_eq_foldr`
+theorem proves their agreement from monoid laws. Each independent bridge constructs a `Derives`
 certificate recursively, showing that its `run` produces the abstract
 specification's value at each vertex. All proofs use **term mode** (no `by`
 blocks or tactics), with annotated argument and important intermediate types.
@@ -338,8 +341,8 @@ For instance, the path-count bridge contains an explicitly typed induction
 hypothesis of the following mathematical shape:
 
 ```lean
-ih : ∀ (prefix : List Nat),
-  Derives algebra prefix rs (runFrom prefix rs)
+ih : ∀ (pre : List Nat),
+  Derives algebra pre rs (runFrom pre rs)
 ```
 
 The proof is valid for any already-computed prefix and remaining row list.
@@ -356,10 +359,13 @@ semantics and corresponding algorithm and proof. The soundness bridges prove
 agreement with the sequential abstract recurrence; they do not establish a
 least-fixed-point theorem for cyclic graphs.
 
-`SemiringLaws` states full semiring properties, but the implementations supply
-only the smaller `Algebra` proof fields needed for the fold bridge. Full
-semiring certificates are a suggested extension. List-based prefix appends
-are intentionally simple rather than asymptotically optimized.
+`SemiringLaws` states the stronger full-semiring axioms, but none of the three
+implementations prove their operations actually satisfy them — each only
+proves the smaller `Algebra` laws that the fold proof needs. Picking one
+implementation and filling in a `SemiringLaws` instance for it (proving, for
+example, that `⊕` is commutative or that `⊗` distributes over `⊕`) would be a
+good follow-on exercise. List-based prefix appends are intentionally simple
+rather than asymptotically optimized.
 
 Further exercises: prove uniqueness of `Derives`, certify full semiring laws,
 replace list accumulation with arrays and prove refinement, add a general
@@ -396,15 +402,19 @@ and permits invoking the local Lean executables with user-supplied graph files.
 
 ### User interface
 
-- **Left**: an editable graph text area. The header must be `vertices N`,
-  `source S`, followed by zero or more `edge U V W` lines. `#` comments and
-  blank lines are allowed. As the text changes, syntax errors are shown.
-- **Right**: an automatically updated SVG visualization of the directed
-  graph. Vertices are positioned in topological layers, edges have arrows,
-  and edge weights appear beside the edges. The source is highlighted.
-- **Below**: **Shortest paths**, **Count paths**, and **Optimal routes**
+- **Top**: **Shortest paths**, **Count paths**, and **Optimal routes**
   buttons submit the input to their corresponding Lean executables. The output area shows a field for
   each vertex or a detailed error emitted by the Lean parser/executable.
+- **Below that, left**: an editable graph text area. The header must be
+  `vertices N`, `source S`, followed by zero or more `edge U V W` lines. `#`
+  comments and blank lines are allowed. As the text changes, syntax errors
+  are shown.
+- **Below that, right**: an automatically updated SVG visualization of the
+  directed graph. Vertices are positioned in topological layers, edges have
+  arrows, and edge weights appear beside the edges. The source is
+  highlighted. Directly beneath it sit the trace playback controls (**Load
+  trace**, **Previous**, **Play**, **Next**, **Restart**, and the step-delay
+  slider), so the animation sits right under the graph it's animating.
 - The visualizer imposes a display limit of 150 vertices and 800 edges. This
   is a browser rendering limit, not part of the Lean theory. The Lean input
   parser additionally requires `U < V`, so the executable graph is a DAG.
@@ -430,14 +440,16 @@ No web assets are loaded from a CDN and no `npm install` is necessary.
 
 The local interface also supports a **runtime-checked trace replay** of all
 three specializations. This is useful in class or when learning the connection
-between a graph recurrence and a fold.
+between a graph recurrence and a fold. The playback controls sit directly
+beneath the graph display; the step-by-step explanation and finalized-value
+grid appear in their own **Execution trace** panel further down the page.
 
 1. Edit the graph input, which instantly updates the SVG on the right.
 2. Click **Shortest paths**, **Count paths**, or **Optimal routes**. The existing
    Lean executable calculates and displays the answer. The separate Lean `trace`
    executable records the computation and loads its timeline at step one.
 3. Click **Play** for timed playback; **Pause**, **Previous**, **Next**, or
-   **Restart** to explore. The step-delay slider defaults to **1.5 seconds**
+   **Restart** to explore. The step-delay slider defaults to **1 second**
    and ranges from **0.35 to 4 seconds**.
 4. The active destination vertex turns **gold**; the predecessor turns **blue**;
    the active edge is highlighted. The explanation includes the edge's weight,
@@ -503,5 +515,4 @@ trace, while blue identifies its predecessor. The editor, SVG graph, and executi
 controls remain functional without external fonts, stylesheets, or JavaScript libraries.
 
 The desktop and tablet screenshots are generated by `python web/test/browser_smoke.py`
-using Chromium with a controlled trace fixture. This checks the appearance and
-interactions but does not replace a real Lean/Lake compilation test.
+using Chromium with a controlled trace fixture.
