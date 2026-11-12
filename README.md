@@ -1,55 +1,37 @@
-# GraphFold — a broken formal  semiring-parametric theory of graph folds
+# GraphFold — a simple case study on auto-formalization errors
 
-This repository purportedly presents a Lean-checked formalization of
-abstract graph folds; three computable instantiations of it over very
-different semirings; and an interactive HTML tool that supports graph
-editing, execution of any of the three implementations, and a tool for
-graphical animation of the steps of the fold, which vary depending on
-which application one chooses.
+The prominent researcher into autoformalization of mathematics in
+Lean, Kevin Buzzard, has written an easy, non-technical [blog post
+(link)](https://xenaproject.wordpress.com/2026/11/12/and-the-proof-is-checked-in-lean/) on what can still go wrong even
+if you think you've formalized the mathematical theory of your
+domain in Lean 4 and proven your implemnentation correct against
+it. Take five minutes to read it then continue through the rest of
+this explanatory document, which provides a concrete case study one
+of the failure modes Buzzard explains, namely errors not in proofs
+but in the AI-generated statements of the propositions to be proved.
 
-This entire presentation was vibe-coded in two to three hours. I did 
-not check the proofs because Lean 4 is so good at that! So am I done?
-Put on your hard hat and start to think like an engineering: ask the
-most vital question of all: what could go wrong?
+This repository purportedly presents (1) a Lean-checked formalization
+of abstract graph folds; (2) three different graph algorithms each as
+a specialization of the theory over a specific concrete semiring; (3)
+compilation of all of that to both three compiled executables and one
+package Lean library making it all available for use by other clients;
+and (4) a pedagogical, web-based, interactive interface for (a) giving
+graph inputs as text, (b) selecting and running one of the three graph
+algorithms on the given graph, and (c) a pedagogical animation tool for
+seeing the algorithm run step by step to fold the acyclic graph input
+you give it down to a final result, e.g., shortest path. I found it
+useful to better see and compare how each of the algoriths works.
 
-The prominent researcher in formalization of resaerch mathematics,
-Kevin Buzzard, wrote a lovely short piece answering this question.
-Several things can go wrong, among the most serious of which is the
-incorrect formalization of what is to be proved in the first place.
-This repo presents a concrete case study.
+I vibe-coded this entire project in Lean 4 (and HTML) in about two
+hours. I did not check the proofs because Lean 4 is so good at that.
+So am I done? Is all well. Should I ship it? Well, it's now time to
+put on your engineer's hard hat, think like a genuinely well trained
+engineer, and ask the most vital question of all: *what else could,
+in in this case study did, go wrong?*
 
-The formalization in this case provides two execution paths by which
-an input graph reaches the core algorithm to be solved: one path is
-from the interactive web-based UI through compiled Lean executables,
-one for each application. The second is through the importable Lean
-4 library that our build also produces for other down-stream uses.
-
-The problem is that while a check of a crucial acyclicity check was
-present in the graphic input *parser* used by the interactive took,
-it was missing further downstream, including in the separate library
-API implementation. The upshot is that the core computation as built
-will happily accept a graph with cycles, will not issue and error, and
-will return correct looking results.
-
-The AI made several significant errors here. First, it implemented the
-crucial acyclicity constraint that makes the generic fold actuall work
-correctly was implemented where? In the user input parser of the user
-interface to the main computation. What! That's completely wrong, as it
-moves that condition from the actual statement of the theorem that is to
-be proved into a completely ancillary part of the overall system, which
-is to say that the AI incorrectly formalized the main theorem itself.
-
-This repo is intended as a pedagogical resource. The mathematics are not
-complicated for a person familiar with basic abstract algebra and abstract
-folds algorithms. The rest of this README is written as if I'd concluded
-that all was well with what the AI produced. Toward the end we present a
-few more details on the specific failure.
-
-It's strong recommended to read [Kevin Buzzard's nice summary of what
-can go wrong even when it's proved in Lean](https://xenaproject.wordpress.com/2026/11/12/and-the-proof-is-checked-in-lean/) before continuing with the rest of the story here. Please read that then continue here to see how compelling a vibe-coded mathematical theory auto-formalized in Lean can appear yet still harbor fatal errors.
-
-Can you fix the error? How will you know then that you've really got it all right?
-Seduced by the remarkable potential of AI-driven auto-*verification* forget, is that *verification* is only half the problem, the other being *validation*. Verification asks and answers the question, *did I build the thing right*, whereas *validation* asks, *did I build the right thing.* Seeing every last proof go through without any human effort is *verification*. Making sure that what's being proved is right is the critical task of *validation*. And what that comes down to today is human as well as AI checking of the statements of the theorems being proved. Being able to understand and check that the specifications themselves are valid is an obligation that cannot be overlooked in any serious scholarly or applied work resting on AI coding in Lean. 
+To proceed follow the quick and easy Getting Started instructions,
+play around with the tool for a bit to get a good sense of what it
+intended to do for you, then return to read the rest of this study.
 
 ## Quick start
 
@@ -166,7 +148,7 @@ bash test-cli.sh
 
 The `lean-toolchain` file specifies `leanprover/lean4:v4.35.0`.
 
-## 3. One shared graph input format
+## 3. Textual graph input format
 
 Each nonblank, noncomment line is a declaration. Comments begin with `#`;
 inline comments are also allowed. The first two declarations are mandatory:
@@ -267,7 +249,7 @@ Unlike the executable file adapter, the lower-level `Paths.run` library
 function still accepts arbitrary natural-number edge multiplicities and base
 values. This is useful for illustrating the general algebra.
 
-### Optimal-route specialization (path-cost spectra: a more exotic fold)
+### Optimal-route specialization
 
 The third interpretation answers **two questions simultaneously**: what is the
 cheapest route, and *how many different routes attain that cost*? This is a
@@ -427,24 +409,25 @@ referenced predecessor is in the computed prefix when evaluated.
 ## 6. Scope and limitations
 
 The algebra and abstract recurrence can be *stated* for arbitrary finite graphs.
-The sequential implementation assumes all predecessors are processed earlier:
-this is enforced by the **file parser** through `FROM < TO`, not required by
-the general `Derives` predicate. Cyclic graphs need a separate fixed-point
-semantics and corresponding algorithm and proof. The soundness bridges prove
-agreement with the sequential abstract recurrence; they do not establish a
-least-fixed-point theorem for cyclic graphs.
+The sequential implementation assumes all predecessors are processed earlier,
+enforced by the **file parser** by its `FROM node label < TO node label` constraint. Cyclic graphs are *not* within the scope of our algorithm, and need a separate fixed-point semantics and corresponding algorithm and proof.
 
 `SemiringLaws` states the stronger full-semiring axioms, but none of the three
-implementations prove their operations actually satisfy them — each only
-proves the smaller `Algebra` laws that the fold proof needs. Picking one
-implementation and filling in a `SemiringLaws` instance for it (proving, for
-example, that `⊕` is commutative or that `⊗` distributes over `⊕`) would be a
-good follow-on exercise. List-based prefix appends are intentionally simple
-rather than asymptotically optimized.
+implementations need to or do fully prove their operations satisfy all of them.
+Each implementation proves only the smaller `Algebra` laws that the fold proof
+needs.
 
-Further exercises: prove uniqueness of `Derives`, certify full semiring laws,
-replace list accumulation with arrays and prove refinement, add a general
-topological-sort phase, and formalize fixed-point semantics for cycles.
+Suggested exercises.
+
+Picking one implementation and defining a `SemiringLaws` instance for
+it (proving, for example, that `⊕` is commutative or that `⊗` distributes
+over `⊕`) would be a good follow-on exercise.
+
+List-based prefix appends are intentionally simple rather than asymptotically optimized, and profiling for performance bugs and fixing them is another.
+
+Or do it all. Prove the uniqueness of `Derives`. Certify the full semiring laws.
+Derive an optimized implementation by replacing list accumulation with arrays or
+hash tables and proving that the fast code is equivalent to the liproof-friendly  refinement, add a general topological-sort phase, and formalize a *fixed-point* semantics for cycles.
 
 ## 7. Interactive local HTML interface
 
@@ -587,61 +570,95 @@ controls remain functional without external fonts, stylesheets, or JavaScript li
 The desktop and tablet screenshots are generated by `python web/test/browser_smoke.py`
 using Chromium with a controlled trace fixture.
 
-## 9. What can still go wrong
+## 9. What Went Wrong?
 
-AI plus proof assistants is a radical advance. In its current state, this
-project is the result of maybe two hours of vibe coding in Lean. It's all
-based on real math — the algebraic
-path problem is decades old and well-studied. It's all "verified" — the
-proofs compile, there's no `sorry` anywhere, the test suite passes, the
-CLI and web UI both produce correct-looking answers on every input anyone
-has tried. So we're good, right?
+AI + proof assistants represent a radical advance in science and
+technology. In its current state, this project is the result of about
+two hours of vibe coding in Lean. That's remarkable. It's all based on
+well developed mathematics: the algebraic path problem is decades old
+and well-studied since 1971. It's all "verified" — the proofs compile,
+there's no `sorry` anywhere, the test suite passes, the CLI and web UI
+both produce correct-looking answers on every input anyone has tried.
+So we're good, right?
 
-No. Be an engineer. Real engineers relentlessly ask *what else could be
-wrong*. Then they make sure it doesn't go wrong. Knuth is widely quoted as
-having warned: "Beware of bugs in the above code; I have only proved it
-correct, not tried it." Other things can go wrong too — compiler or kernel
-bugs, hardware errors — but what Knuth was really telling us is that a proof
-only proves the spec that you, or more likely now your bot, wrote down.
-Ask an AI. I did. It's a step, anyway.
+No. Again, think like an engineer with a moral obligation to protect
+users from errors that cause unacceptable harms. Real engineers ask
+relentlessly *what else could go wrong* and then they make sure that
+that doesn't happen. 
 
-So now we unveil the mystery. See the file called
-[`whatCanGoWrongSpecGaps.lean`](whatCanGoWrongSpecGaps.lean). The AI turned
-up a fault within a minute: `Shortest.run`, `Paths.run`, and `Optimal.run` all
-accept a graph with a genuine circular dependency and silently return a
-plausible-looking answer, without warning. The file-based CLI and web
-UI are protected (the parser rejects `FROM < TO` violations). The *library*
-API — the one the "Using GraphFold as a library" section above tells you
-to use directly in Lean —
-does not. And the soundness theorems (`Shortest.sound`, `Paths.sound`,
-`Optimal.sound`) typecheck without complaint on the cyclic input, because
-`Derives`/`Satisfies` never asserted acyclicity in the first place. The
-proof isn't wrong. It just proves less than you think it does.
+Knuth is widely quoted as having warned: "Beware of bugs in the above
+code; I have only proved it correct, not tried it." The failure modes
+he had in mind included compiler (today kernel) bugs, hardware errors,
+and *specification gaps*. Some have interpreted Knuth as shilling for
+testing, but what he was really telling us is that a proof only proves
+that the code satisfies the specification, not that the specification
+itself is right. That's the failure mode this case study is about.
+
+To see proofs and a code-based explanation of the failure, se  the file 
+called [`whatCanGoWrongSpecGaps.lean`](whatCanGoWrongSpecGaps.lean). An
+AI, prompted to check our formalization against the actual published work
+found the failure in this case within a minute: `Shortest.run`, `Paths.run`, 
+and `Optimal.run` all accept a graph with a genuine cycle and silently 
+return a plausible-looking answer. The file-based CLI and web UI are 
+protected, as the parser rejects `FROM < TO` violations. The *library*
+API, on the other hand, which the "Using GraphFold as a library" section
+above tells you to use directly in Lean — does not. The soundness theorems
+(`Shortest.sound`, `Paths.sound`, `Optimal.sound`) typecheck without error
+on cyclic inputs, because `Derives`/`Satisfies` never asserted acyclicity
+in the first place. The proof isn't wrong. It just proves less than you
+think because the AI bot got the *statement* of the theorem wrong.
+
+You can mostly trust vibe-coded proofs to *verify* your construction, but
+the claims that they they're actually proving are up to *you* to validate.
 
 A specification can have exactly the same kind of gap as an implementation.
-Examples could include a missing precondition, a false precondition (in which
-case anything can be proved), or a check that exists but is never used.
+Curry-Howard tells us that large proofs constructions are just *software*.
+It's thus vulnerable to oh so many other software engineering failure modes.
+Examples of incorrect theorem *statements* could include missing preconditions (as here); a false precondition, in which case anything can be proved *vacuously*,
+or a check that is correct but is never actually called (also see in this case).
 
-"Formally verified" is not a finish line; it's a claim about one proposition,
-and the proposition can be weaker than it sounds. Knuth's quip about proving
-code correct without trying it could be read as "testing still matters." But
-his real message runs deeper: even with proofs in hand, they have to be
-proofs of the right proposition — the right specification.
+Formally *verified* vibe-coded Lean 4 does *not* entail readiness to ship, as
+it bypasses the vital orthogonal process of *validating* what has been vibed.
+Knuth's quip about proving code correct without trying it could be read as
+"testing still matters." But his real message was that even with proofs, much
+can still go wrong including in particular gaps in the *specifications* proved
+to have been satisfied. This is why, in my view, fluency in reading formal
+specifications in higher-order type theories is now such an important skill.
 
-### Further investigation showed
+### The Actual Error
 
-Further investigation shows there to be one critical gap: the autoformalization
-of one original publication turned out to have a specific formalization error of
-omission. Mehryar Mohri's "Semiring Frameworks and Algorithms for Shortest-Distance Problems" (2002) always defines the target quantity — the shortest distance itself — independently of any algorithm, as a sum over the actual set of paths. He only ever equates an algorithm's output to that target *under an explicit hypothesis* (his Corollary 2: the graph is acyclic).
+Further investigation shows one fundamental gap: the autoformalization of the  original publication, Mehryar Mohri's "Semiring Frameworks and Algorithms for Shortest-Distance Problems" (2002) always defines the target quantity — the
+shortest distance itself, for example — independently of any algorithm, as a
+sum over the actual set of paths. He only ever equates an algorithm's output
+to that target *under an explicit hypothesis* (his Corollary 2: the graph is
+acyclic).
 
-GraphFold simply lacks a formalization of that independent target
-in `Core.lean`. `Derives`/`Satisfies` only assert that two renderings of
-`specStep`'s recursive unfolding agree with each other — a claim about
-the algorithm's self-consistency, whereas what's needed is a proof of
-correctness against an independent mathematical theory. Then with no
-independent target, there is nothing for a cyclic input's output to be
-wrong *relative to*. The `Algebra` laws themselves are not erroneous here.
-The error is the dropping during machine formalization of an essential
-hypothesis and an missing independent specification. They're clear in
-the peer-reviewed publication but were just dropped by Claude when it
-ingested that earlier work.
+GraphFold simply lacks a formalization of that independent target and
+condition in our formalization of the abstract theory: `Core.lean`.
+`Derives`/`Satisfies` only assert that two renderings of `specStep`'s
+recursive unfolding agree with each other — a claim about the algorithm's
+self-consistency, whereas what's needed is a proof of correctness against
+the actual,independent mathematical theory. With no independent truth,
+there is nothing for a cyclic input's output to be wrong *relative to*.
+The `Algebra` laws themselves are not erroneous here. The error is the
+dropping during machine formalization of an essential hypothesis. It's
+present in the original peer-reviewed, human-derived mathematics, but
+was simply dropped by Claude when it ingested and auto-formalized that
+earlier work.
+
+This case study suggests that fatal specification errors can plaugue even
+the simplest of Lean formalizations, particularly AI-generated ones. So how
+might one, not *verify* a major claim with proof of tens of millions of lines
+of Lean code, but *validate* the proposition that the specifications of what
+is to be proved reflect that actual mathematics of the domain? Hint: it's now
+a large-scale software engineering problem in all respects: intellectual control,
+careful modularizations, both automated and human code reviews, regression and
+other forms of testing, process quality control.
+
+The programming languages, software engineering, and AI resaerch communities
+have given us practically miraculous tools for verifying mathematical claims. Validating the claims themselves remains an unsolved problem for formal code
+at scale. Indeed, building on the remarkable success in research mathematics
+applications of formal verification of very hard propositions requiring very
+large proof constructions, the problem of *validation* remains largely open.
+You built the thing right (it's proven) is *not* the same as you built the
+right thing.
