@@ -9,24 +9,30 @@ it. Take five minutes to read it then continue through the rest of
 this explanatory document.
 
 This document and repository provides a concrete case study that
-started with a quick sprint to illustrate an architectural style
-that separates the abstract theory (often uncomputable), concrete
-computable implementations, and modular proofs that the latter are
-in compliance with the former. What it turned into conveniently is
-an example from real work of what I'd consider the most threatening
-of Buzzard's can-also-go-wrong failure modes: not errors proofs but
-in the statements of the propositions, specifications, to be proved,
-especially when they themselves are vibed in Lean 4.
+started with a quick vibe-coding effort to produce a lesson for my
+students, with two main points. First, parameterizing algorithms
+by diverse concrete instances of abstract algebraic structures can
+reveal deep commonalities among seemingly divrse algoriths, and an
+architectural style for verified code that separately specifies the
+abstract theory (often uncomputable), divrse concrete, computable
+implementations, and modular proofs that the implementations satisfy
+the formal specifications.
 
+What this effort turned into fortuitously was a pretty accessible
+case study illustrating what I'd consider the most threatening
+of Buzzard's can-also-go-wrong failure modes: not errors proofs but
+in the statements of the very propositions to be proved, especially
+when auto-formalized by inductive reasoning systems: generative AI.
 To be clear, the construction here is broken in just the right way,
 as a natural result of the AI methods used to produce it, to teach
 my students with a reasonably accessible example from real-world work.
+
 The repo, and most of the rest of this document, are thus written as
-if they presented a *validated** (1) a Lean-checked formalization
+if they presented a *validated* (1) Lean-verified auto-formalization
 of abstract graph folds; (2) three different graph algorithms each
-specialized by a choice of concrete semiring and formally verified
-against the abstract theory, then followed by; (3) its compilation
-into three executables, one for each algorithm, and a Lean library
+a specialization by choice of an actual concrete semiring instance,
+formally verified against the abstract theory,and; (3) its compilation
+into (a) three executables, one for each algorithm; (b) and a Lean library
 that makes this work easily usable by other clients; and (4) a fun
 interactive, animated, pedagogical, web-based user interface for (a)
 giving graph inputs as text, (b) selecting and running one of the
@@ -38,7 +44,7 @@ shortest paths, etc. I found the animation helped me to check my
 understanding of how each of the particular algoriths works.
 
 I vibe-coded this whoel project in Lean 4 and HTML in about two
-hours, starting with having AI auto-formalize the original work,
+hours, starting by having my AI auto-formalize an original work,
 the paper by Mehryar Mohri, "Semiring Frameworks and Algorithms
 for Shortest-Distance Problems" (2002).
 
