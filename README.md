@@ -63,8 +63,8 @@ ship it! Uh, wait one moment please. All that is true, and yet, alas, it has
 several specification gaps and other basic quality problems. Proofs plus AI
 is without question a new kind of rocket fuel. And that means you really can
 get burned.
-See [§9](#9-what-can-still-go-wrong) and
-[`whatCanGoWrongSpecGaps.lean`](whatCanGoWrongSpecGaps.lean) for technical
+See the "What can still go wrong" section near the end of this document, and
+[`whatCanGoWrongSpecGaps.lean`](whatCanGoWrongSpecGaps.lean), for technical
 details. And now back to the show.
 
 **Historical context.** This repo provides an abstract formalization and three verified instances of it, applying the established *algebraic path problem*. B. A. Carré's 1971 paper, [“An Algebra for Network Routing Problems”](https://doi.org/10.1093/imamat/7.3.273), is a direct early articulation of the common algebra underlying different routing computations. Related developments include R. C. Backhouse and Carré's *Regular Algebra Applied to Path-Finding Problems* (1975), [Michel Minoux's generalization of algebraic path structures](https://www.numdam.org/item/RO_1976__10_2_33_0/) (1976), and [Daniel J. Lehmann's closed-semiring treatment of transitive closure](https://doi.org/10.1016/0304-3975(77)90056-1) (1977). These developments built on earlier path, automata, and dynamic-programming algorithms. For a recent treatment connecting semiring algebras to dynamic programming more broadly — including a new operation for counting minimal-cost solutions — see A. Baril, M. Couceiro, and V. Lagerkvist, [“New Perspectives on Semiring Applications to Dynamic Programming”](https://doi.org/10.1016/j.dam.2025.12.035), *Discrete Applied Mathematics*, vol. 383, pp. 243–279, 2026.
@@ -560,7 +560,8 @@ up a fault within a minute: `Shortest.run`, `Paths.run`, and `Optimal.run` all
 accept a graph with a genuine circular dependency and silently return a
 plausible-looking answer, without warning. The file-based CLI and web
 UI are protected (the parser rejects `FROM < TO` violations). The *library*
-API — the one `README.md` §4 tells you to use directly in Lean —
+API — the one the "Using GraphFold as a library" section above tells you
+to use directly in Lean —
 does not. And the soundness theorems (`Shortest.sound`, `Paths.sound`,
 `Optimal.sound`) typecheck without complaint on the cyclic input, because
 `Derives`/`Satisfies` never asserted acyclicity in the first place. The

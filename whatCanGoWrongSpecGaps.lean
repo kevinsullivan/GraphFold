@@ -45,7 +45,8 @@ requires every edge to satisfy `FROM < TO`, so no cyclic graph can reach
 of the system is fine — it just isn't the part that advertises a correctness
 proof. The proofs are about the **library-level** API: `Graph α`, `run`,
 `Derives`, `Satisfies`. Nothing stops you from calling that API directly,
-exactly as `README.md` §4 demonstrates, and nothing in it checks acyclicity.
+exactly as README.md's "Using GraphFold as a library" section demonstrates,
+and nothing in it checks acyclicity.
 -/
 
 /-- Recall from `Core.lean`: a `Graph α` is a `List (Row α)`, one `Row` per
@@ -125,6 +126,87 @@ instead of a crash:
    graph. A proof of the former says nothing about the latter unless you
    also know the input was a DAG — and nothing enforces that at this layer.
 
+### Where exactly is the missing math?
+
+Both the file-based CLI and the library API bottom out in the *same* code:
+`lookup`, `specStep`, `step`, `run`, `Derives` — all in `Core.lean` and the
+three `Implementations/*.lean` files. Grep the whole project for
+`isOrdered` or `FROM < TO` and you find exactly one place either check is
+performed: `Format.lean`'s `parseEdge`, which only the file-based path ever
+calls. The library API shares every line of the evaluator with the CLI and
+none of its gate — which is precisely why it's exposed and the CLI isn't.
+
+That asymmetry is the tell. The `FROM < TO` check is not a property of the
+*theory* — not of `Algebra`, `Graph`, `Derives`, or `Satisfies` — it's a
+property of one specific input adapter, bolted on after the fact. Put
+mathematically: `Graph α` is defined as plain `List (Row α)`, with nothing
+in the type recording that it came from a topologically valid construction.
+`Derives`/`Satisfies` are stated for *any* `Graph α` — DAG or not — so no
+amount of using them correctly can recover a guarantee the type never
+carried. The missing mathematics isn't a missing `if`-check; it's a missing
+*witness* — some proof-carrying evidence of "this `Row` list is
+topologically ordered" that would have to live in the shared core
+(`Core.lean`) to protect every caller, rather than in one caller's input
+adapter after the type has already erased the information needed to tell.
+
+(Candidate shapes for that witness — not attempted here, per this file's
+own rule that fixes belong in the library, not in this case study: thread
+an `isOrdered g = true` hypothesis through `Derives`/`Satisfies` themselves;
+index `Graph` by a separately-defined "this is a DAG" proposition so an
+un-ordered graph is simply not a term of the right type; or change `lookup`
+to return `Option α` and force every caller to handle "not yet known"
+instead of silently reading `A.zero`.)
+
+### Checked against the literature: where this actually went wrong
+
+This isn't a hunch — it matches a precise, well-known pattern in the
+algebraic-path-problem literature, and GraphFold deviates from it in an
+identifiable way. Take Mehryar Mohri, *"Semiring Frameworks and Algorithms
+for Shortest-Distance Problems,"* Journal of Automata, Languages and
+Combinatorics 7(3):321–350, 2002 (one of the sources `README.md`'s
+Historical Context section already points to for this project's lineage).
+
+Mohri's framework defines the target quantity — the shortest distance
+δ(s, q) — **independently of any algorithm**, as a sum over the actual set
+of paths P(q) from the source to q:
+
+```
+δ(s, s) = 1̄
+δ(s, q) = ⊕_{π ∈ P(q)} w[π]        (his Equation 1, for q ≠ s)
+```
+
+That sum is only guaranteed to be well-defined under a stated hypothesis:
+the semiring must be *k-closed for G* (Definition 8). His correctness
+theorems are then always conditional on that hypothesis — most sharply in
+his Corollary 2: *"Let G be an acyclic weighted directed graph... If we run
+the [topological-order algorithm]... then... d[q] = δ(s, q)."* Its own proof
+is one line: *"When G is acyclic, by definition, any semiring is right
+k-closed for G."* Acyclicity isn't a side remark there — it's the exact
+premise that licenses equating the algorithm's output with the independently
+stated target quantity.
+
+GraphFold has no analogue of δ(s, q)/Equation (1) anywhere in `Core.lean`.
+There is no proposition in this codebase that characterizes "the correct
+shortest distance (or path count, or cost spectrum)" independently of
+`specStep`'s own recursive unfolding. `Derives`/`Satisfies` instead *define*
+correctness as "agrees with `specStep` applied in list order" — which means
+`Satisfies`/`sound` are claims that two renderings of the **same** procedure
+(a left fold and a right fold of the same `specStep`) agree with each other,
+not claims that the procedure's output equals an independently specified
+mathematical quantity. That is a strictly weaker kind of theorem than the
+ones in the literature this project cites as its own motivation, and it is
+weaker in exactly the place that matters: it has no target for the cyclic
+case to be *wrong relative to*, so there is nothing for a cyclic input to
+contradict. The acyclicity hypothesis in Mohri's Corollary 2 is precisely
+what `isOrdered` was presumably meant to formalize — but, as diagnosed
+above, it never appears as a hypothesis of `Derives`, `Satisfies`, or any
+`sound` theorem. The error wasn't choosing the wrong algebraic laws for
+`Algebra` (those match the literature fine for the acyclic case — Mohri's
+own proof shows acyclicity alone, with no closure or idempotence
+requirement, suffices); the error was omitting the hypothesis and the
+independent target specification that the cited literature always states
+explicitly, and silently treating "the algorithm's self-consistency" as if
+it were a proof of "the algorithm's correctness."
 -/
 
 /-!
