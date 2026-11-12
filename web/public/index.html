@@ -32,6 +32,15 @@ edge 2 3 1</textarea></div>
       <section class="panel visual-panel" aria-labelledby="graph-heading">
         <div class="panelhead"><div><span class="panelnumber">GRAPH</span><h2 id="graph-heading">Directed graph</h2></div><span id="graph-count" class="filetype">—</span></div>
         <div class="graph-stage" id="graph-stage"><svg id="graph-svg" role="img" aria-label="Diagram of the directed graph" viewBox="0 0 760 450" preserveAspectRatio="xMidYMid meet"></svg><div id="graph-error" class="graph-error" hidden></div></div>
+        <div class="animation-controls">
+          <button type="button" id="trace-prepare" class="trace-button trace-primary" disabled>Load trace</button>
+          <button type="button" id="trace-prev" class="trace-button" disabled aria-label="Previous step">← Previous</button>
+          <button type="button" id="trace-play" class="trace-button" disabled>▶ Play</button>
+          <button type="button" id="trace-next" class="trace-button" disabled aria-label="Next step">Next →</button>
+          <button type="button" id="trace-reset" class="trace-button" disabled>↺ Restart</button>
+          <label class="speed-label" for="trace-speed">Step delay <strong id="speed-label">1 s</strong></label>
+          <input id="trace-speed" type="range" min="350" max="4000" value="1000" step="50" aria-label="Milliseconds per animation step">
+        </div>
         <div class="graph-legend"><span><i class="legend-node source"></i> Source vertex</span><span><i class="legend-node"></i> Vertex</span><span><i class="legend-line"></i> Directed weighted edge</span></div>
       </section>
     </div>
@@ -44,15 +53,6 @@ edge 2 3 1</textarea></div>
       <div class="animation-header">
         <div><span class="panelnumber">TRACE</span><h2 id="animation-heading">Execution trace</h2><p>Recorded steps from the Lean executable.</p></div>
         <div class="animation-mode" id="animation-mode">SELECT AN ALGORITHM</div>
-      </div>
-      <div class="animation-controls">
-        <button type="button" id="trace-prepare" class="trace-button trace-primary" disabled>Load trace</button>
-        <button type="button" id="trace-prev" class="trace-button" disabled aria-label="Previous step">← Previous</button>
-        <button type="button" id="trace-play" class="trace-button" disabled>▶ Play</button>
-        <button type="button" id="trace-next" class="trace-button" disabled aria-label="Next step">Next →</button>
-        <button type="button" id="trace-reset" class="trace-button" disabled>↺ Restart</button>
-        <label class="speed-label" for="trace-speed">Step delay <strong id="speed-label">1.5 s</strong></label>
-        <input id="trace-speed" type="range" min="350" max="4000" value="1500" step="50" aria-label="Milliseconds per animation step">
       </div>
       <div class="trace-progress"><div id="trace-progress-fill"></div></div>
       <div class="trace-body">

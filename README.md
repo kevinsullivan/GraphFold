@@ -1,5 +1,25 @@
 # GraphFold — a semiring-parametric theory of graph folds in Lean 4
 
+## Quick start
+
+1. Open any `.lean` file in VS Code. This triggers a one-time download of the Lean toolchain and dependencies — wait for it to finish before continuing.
+2. Open a terminal in VS Code and run:
+
+   ```sh
+   lake build
+   ```
+
+3. Open a terminal in VS Code.
+4. Start the local web server:
+
+   ```sh
+   cd web && npm start
+   ```
+
+5. Open [http://localhost:8787](http://localhost:8787) in your browser.
+
+## Overview
+
 GraphFold presents a formalized **theory of generalized folds over directed acyclic graphs (DAGs)**, parameterized by the choice of an algebra—typically a semiring. Rather than treating shortest-path calculation, path counting, and path-cost enumeration as unrelated programs, it reveals their shared mathematical structure: values propagated along edges are combined at each vertex according to algebraic operations chosen for the particular problem. A single graph-recursion pattern consequently yields several notably different graph algorithms.
 
 The project also illustrates a broader role for dependent type theory. **Beyond enabling verification of individual programs, an expressive type system allows the common mathematical foundations of distinct computations to be represented explicitly as reusable definitions, specifications, and proofs.** In Lean 4, the algebra and graph dependency structure can be separated from implementations, while independently developed *proof bridges* establish how each concrete implementation realizes the abstract recurrence. The objective is not merely to verify three algorithms but to understand, in a precise and reusable way, *why they are instances of the same theory*.

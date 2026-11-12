@@ -307,6 +307,40 @@ function updateHighlights(event) {
   });
 }
 
+/** Mode-specific, plain-language descriptions of what each trace event means. */
+function startExplanation(mode, event) {
+  const isSource = mode === 'shortest' ? event.base !== 'INF' : event.base !== '0' && event.base !== '[]';
+  if (mode === 'shortest') return isSource
+    ? `Vertex ${event.vertex} is the source, so its running best distance starts at 0.`
+    : `Vertex ${event.vertex} has no known distance yet, so it starts at ∞ (unreachable) until an edge reaches it.`;
+  if (mode === 'paths') return isSource
+    ? `Vertex ${event.vertex} is the source, so it starts with 1 path already counted — the empty path that starts and ends here.`
+    : `Vertex ${event.vertex} starts with 0 paths counted; incoming edges will add to this total.`;
+  return isSource
+    ? `Vertex ${event.vertex} is the source, so its running cost spectrum starts as [0] — the zero-cost empty path.`
+    : `Vertex ${event.vertex} starts with an empty cost spectrum []; incoming edges will append to this list.`;
+}
+
+function edgeExplanation(mode, event) {
+  if (mode === 'shortest') {
+    const reachable = event.prior !== 'INF';
+    if (!reachable) return `Vertex ${event.predecessor} is still unreachable (∞), so this edge offers no usable distance; the running best stays ${event.before}.`;
+    return `Vertex ${event.predecessor}'s distance (${event.prior}) plus this edge's weight (${event.weight}) gives a candidate distance of ${event.contribution}. Compare it against the current best (${event.before}) and keep the smaller: ${event.after}.`;
+  }
+  if (mode === 'paths') {
+    return `Vertex ${event.predecessor} already has ${event.prior} path(s) reaching it; every one of them extends across this edge, contributing ${event.contribution} path(s) (edge weight does not affect counting). Add that to the running total ${event.before} to get ${event.after}.`;
+  }
+  return `Vertex ${event.predecessor}'s reached costs (${event.prior}) each get this edge's weight (${event.weight}) added, giving the extended costs ${event.contribution}. Append that list to the running spectrum ${event.before} to get ${event.after}.`;
+}
+
+function finishExplanation(mode, event) {
+  if (mode === 'shortest') return event.value === 'INF'
+    ? `Vertex ${event.vertex} is unreachable from the source: no incoming edge ever produced a finite distance.`
+    : `Vertex ${event.vertex}'s shortest distance is finalized at ${event.value}; later vertices can now use this value.`;
+  if (mode === 'paths') return `Vertex ${event.vertex} has ${event.value} total path(s) from the source; later vertices can now use this count.`;
+  return `Vertex ${event.vertex}'s full cost spectrum is finalized as ${event.value} — its minimum entry and how often it occurs give the optimal cost and the number of tied optimal routes.`;
+}
+
 function paintTrace() {
   if (!traceEvents.length || !graph) return;
   const current = traceEvents[traceIndex];
@@ -319,17 +353,17 @@ function paintTrace() {
   updateHighlights(current);
   if (current.kind === 'start') {
     traceControls.title.textContent = `Vertex ${current.vertex} · initialize`;
-    traceControls.explanation.textContent = `Initialize the accumulator to b(${current.vertex}) = ${current.base}.`;
+    traceControls.explanation.textContent = startExplanation(selectedMode, current);
     traceControls.equation.textContent = `acc ← ${current.base}`;
   } else if (current.kind === 'edge') {
     traceControls.title.textContent = `Edge ${current.predecessor} → ${current.vertex} · contribute`;
-    traceControls.explanation.textContent = `Combine F(${current.predecessor}) with edge weight ${current.weight}, then update the accumulator.`;
+    traceControls.explanation.textContent = edgeExplanation(selectedMode, current);
     const operators = selectedMode === 'shortest' ? ['min', '+'] :
       selectedMode === 'paths' ? ['+', '×'] : ['++', '⊗'];
     traceControls.equation.textContent = `${current.prior} ${operators[1]} ${selectedMode === 'paths' ? '1' : current.weight} = ${current.contribution}    ·    ${operators[0]}(${current.before}, ${current.contribution}) = ${current.after}`;
   } else {
     traceControls.title.textContent = `Vertex ${current.vertex} · finalized`;
-    traceControls.explanation.textContent = `Set F(${current.vertex}) to the final accumulator value.`;
+    traceControls.explanation.textContent = finishExplanation(selectedMode, current);
     traceControls.equation.textContent = `F(${current.vertex}) = ${current.value}`;
   }
   const finalized = Array(graph.count).fill('—');
