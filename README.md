@@ -2,36 +2,65 @@
 
 The prominent researcher into autoformalization of mathematics in
 Lean, Kevin Buzzard, has written an easy, non-technical [blog post
-(link)](https://xenaproject.wordpress.com/2026/11/12/and-the-proof-is-checked-in-lean/) on what can still go wrong even
+here (link)](https://xenaproject.wordpress.com/2026/11/12/and-the-proof-is-checked-in-lean/) on what can still go wrong even
 if you think you've formalized the mathematical theory of your
-domain in Lean 4 and proven your implemnentation correct against
+domain in Lean 4 and proven your implemnentations correct against
 it. Take five minutes to read it then continue through the rest of
-this explanatory document, which provides a concrete case study one
-of the failure modes Buzzard explains, namely errors not in proofs
-but in the AI-generated statements of the propositions to be proved.
+this explanatory document.
 
-This repository purportedly presents (1) a Lean-checked formalization
-of abstract graph folds; (2) three different graph algorithms each as
-a specialization of the theory over a specific concrete semiring; (3)
-compilation of all of that to both three compiled executables and one
-package Lean library making it all available for use by other clients;
-and (4) a pedagogical, web-based, interactive interface for (a) giving
-graph inputs as text, (b) selecting and running one of the three graph
-algorithms on the given graph, and (c) a pedagogical animation tool for
-seeing the algorithm run step by step to fold the acyclic graph input
-you give it down to a final result, e.g., shortest path. I found it
-useful to better see and compare how each of the algoriths works.
+This document and repository provides a concrete case study that
+started with a quick sprint to illustrate an architectural style
+that separates the abstract theory (often uncomputable), concrete
+computable implementations, and modular proofs that the latter are
+in compliance with the former. What it turned into conveniently is
+an example from real work of what I'd consider the most threatening
+of Buzzard's can-also-go-wrong failure modes: not errors proofs but
+in the statements of the propositions, specifications, to be proved,
+especially when they themselves are vibed in Lean 4.
 
-I vibe-coded this entire project in Lean 4 (and HTML) in about two
-hours. I did not check the proofs because Lean 4 is so good at that.
-So am I done? Is all well. Should I ship it? Well, it's now time to
-put on your engineer's hard hat, think like a genuinely well trained
-engineer, and ask the most vital question of all: *what else could,
-in in this case study did, go wrong?*
+To be clear, the construction here is broken in just the right way,
+as a natural result of the AI methods used to produce it, to teach
+my students with a reasonably accessible example from real-world work.
+The repo, and most of the rest of this document, are thus written as
+if they presented a *validated** (1) a Lean-checked formalization
+of abstract graph folds; (2) three different graph algorithms each
+specialized by a choice of concrete semiring and formally verified
+against the abstract theory, then followed by; (3) its compilation
+into three executables, one for each algorithm, and a Lean library
+that makes this work easily usable by other clients; and (4) a fun
+interactive, animated, pedagogical, web-based user interface for (a)
+giving graph inputs as text, (b) selecting and running one of the
+algorithms on the given graph, and (c) stepping through an animation
+to see the algorithm working step by step as it folds a graph down
+to a single answer from a given node, recursively, one outgoing edge
+at a time, down to a final result, e.g., shortest path, number of
+shortest paths, etc. I found the animation helped me to check my
+understanding of how each of the particular algoriths works.
 
-To proceed follow the quick and easy Getting Started instructions,
-play around with the tool for a bit to get a good sense of what it
-intended to do for you, then return to read the rest of this study.
+I vibe-coded this whoel project in Lean 4 and HTML in about two
+hours, starting with having AI auto-formalize the original work,
+the paper by Mehryar Mohri, "Semiring Frameworks and Algorithms
+for Shortest-Distance Problems" (2002).
+
+I did not check the generated code but but Lean accepts all the
+proofs and I trust it implicitly. Also graphical animations of the
+algorithms in action, step by step, is really cool. So am I done?
+Can I ship it to production now? Well, at this point, it's time to
+put on your real engineer's hard hat, think like a real engineer,  
+and ask the most vital question of all: *what else could go wrong?*
+
+To proceed follow the easy Quick Start instructions below to bring
+up our systems. Open the browser tool. It gives you a small graph to
+start with, which you can edit directly. When read, push one of the
+three buttons to run one of the algorithms to produce an answer for
+your graph, then step through the stored trace of that execution (all
+in verified Lean 4) to see precisely how the algorithm arrived at its
+answer. Once you've done that, come back here, be seduced by the real
+magic of AI + Lean, and then have eyes opened by seeing exactly what
+can go wrong even on a small-scale auto-formaliation and verified
+implementation experiment.
+
+Enjoy!
 
 ## Quick start
 
