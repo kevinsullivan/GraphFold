@@ -1,4 +1,4 @@
-# GraphFold — a simple case study on auto-formalization errors
+# Graph Folds and *Validation* Faults in Verified Code
 
 TLDR: verification ≠ validation. Lean 4 nails one. You need both.
 A small case study of a *seemingly* good formalization verified by
