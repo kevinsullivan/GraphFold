@@ -17,6 +17,8 @@
    ```
 
 5. Open [http://localhost:8787](http://localhost:8787) in your browser.
+6. This formalization has not yet been rigorously checked. If you find an
+   issue, please report it via [GitHub Issues](https://github.com/kevinsullivan/GraphFold/issues), or feel free to send a pull request.
 
 ## Overview
 
