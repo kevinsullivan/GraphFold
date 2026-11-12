@@ -48,18 +48,33 @@ proof. The proofs are about the **library-level** API: `Graph α`, `run`,
 exactly as `README.md` §4 demonstrates, and nothing in it checks acyclicity.
 -/
 
-/-- Row 0 depends on vertex 1 (not yet computed); row 1 depends on vertex 0.
-    A genuine mutual dependency — this cannot come from the file parser,
-    which forbids `FROM < TO` violations, but nothing stops constructing it
-    directly as a `Graph`. -/
+/-- Recall from `Core.lean`: a `Graph α` is a `List (Row α)`, one `Row` per
+    vertex, in vertex-number order. Each `Row` has a `base : α` (the vertex's
+    own starting contribution) and an `incoming : List (Nat × α)` — one
+    `(predecessor vertex, edge weight)` pair per incoming edge.
+
+    Below, row 0 ("vertex 0") lists vertex 1 as a predecessor — but vertex 1
+    is row *1*, which comes *after* row 0 in the list, so it hasn't been
+    computed yet when row 0 is processed. Row 1, in turn, lists vertex 0 as
+    a predecessor. That's a genuine mutual dependency: this exact shape
+    cannot come from the file parser, which forbids `FROM < TO` violations
+    (vertex 1 → vertex 0 would have to be written as an edge from a higher
+    index to a lower one), but nothing stops constructing it directly as a
+    `Graph` value, bypassing the parser entirely. -/
 def cyclicNat : Graph Nat :=
   [ { base := 0, incoming := [(1, 10)] }
   , { base := 0, incoming := [(0, 100)] } ]
 
+/-- The same cyclic shape as `cyclicNat` above, retyped for `Shortest`'s
+    carrier `Option Nat` (`none` = unreachable) so we can run it through
+    `Shortest.run` instead of `Paths.run`. -/
 def cyclicOpt : Graph (Option Nat) :=
   [ { base := some 0, incoming := [(1, some 10)] }
   , { base := none,   incoming := [(0, some 100)] } ]
 
+/-- The same cyclic shape again, retyped for `Optimal`'s carrier
+    `Spectrum = List Nat` (`[]` = no paths reach this vertex yet) so we can
+    run it through `Optimal.run`. -/
 def cyclicSpec : Graph Optimal.Spectrum :=
   [ { base := [0], incoming := [(1, [10])] }
   , { base := [],  incoming := [(0, [100])] } ]
@@ -113,21 +128,76 @@ instead of a crash:
 -/
 
 /-!
+## Resolved — `Derives` is provably unique
+
+One item from the checklist below turned out not to be a gap. It's worth
+keeping the resolution visible, not just the open questions: the engineering
+process is supposed to produce both.
+
+> Do the `sound` theorems rule out some *other* list also satisfying
+> `Derives` for the same graph? If `Derives` isn't provably functional,
+> "sound" could be compatible with multiple, inconsistent "correct" answers.
+-/
+
+/-- `Derives` is **right-unique**: fixing the starting prefix `computed` and
+    the graph `g`, there is at most one `result` that `Derives A computed g`
+    can relate them to. (Two different proofs of `Derives A computed g r₁`
+    and `Derives A computed g r₂` always force `r₁ = r₂`.) Proved by
+    recursion on the graph, tracking that both derivations' single step
+    (`eq_step`) computes the same deterministic `specStep`, hence the same
+    next prefix, hence (by the induction hypothesis) the same final result.
+    No tactics; no `sorry`. -/
+theorem Derives.unique {α : Type} {A : Algebra α} :
+    ∀ {computed : List α} {g : Graph α} {result1 result2 : List α},
+    Derives A computed g result1 → Derives A computed g result2 → result1 = result2
+  -- Empty graph: `Derives.done` is the only constructor, and its own type
+  -- forces the result to equal `computed` — so both sides are literally
+  -- the same term, and `rfl` (reflexivity) closes it.
+  | _, [], _, _, Derives.done _, Derives.done _ => rfl
+  -- Nonempty graph: `Derives.next` is the only constructor. Both proofs
+  -- compute `value1`/`value2` from the *same* `computed` and `r` via the
+  -- deterministic function `specStep`, so `eq1.trans eq2.symm` (chain the
+  -- first equation with the second, reversed) gives `value1 = value2`.
+  | _, _ :: _remaining, _, _,
+    Derives.next _ _ _ value1 _ eq1 tail1,
+    Derives.next _ _ _ value2 _ eq2 tail2 =>
+      have hval : value1 = value2 := eq1.trans eq2.symm
+      -- `tail1 : Derives A (computed ++ [value1]) remaining result1`
+      -- `tail2 : Derives A (computed ++ [value2]) remaining result2`
+      -- These don't look like the same proposition yet, because `value1`
+      -- and `value2` are different variables — even though `hval` says
+      -- they're equal. `hval ▸ tail2` ("transport tail2 along hval")
+      -- rewrites every occurrence of `value2` in `tail2`'s type to
+      -- `value1`, producing `Derives A (computed ++ [value1]) remaining
+      -- result2` — now the same prefix as `tail1`'s type, so the
+      -- recursive call to `Derives.unique` type-checks and finishes the
+      -- proof by induction on the (structurally smaller) `remaining`.
+      Derives.unique tail1 (hval ▸ tail2)
+
+/-!
+This closes the uniqueness question cleanly: `specStep` is a plain
+(non-relational) function, so each `next` step is forced, and by induction
+the whole derivation is forced. "Sound" is therefore not compatible with
+multiple answers for a fixed, well-formed input — that particular worry
+was unfounded. (It says nothing about Gap 1: uniqueness of the *derivation*
+and *correctness of the recurrence for cyclic input* are different claims,
+and this theorem doesn't touch the second one.)
+-/
+
+/-!
 ## Engineering checklist: what else should we distrust?
 
 This section is intentionally a list of open questions, not resolved ones.
-Each is a candidate for its own "Gap N" section once investigated.
+Each is a candidate for its own "Gap N" section once investigated. (One
+item that used to be here — uniqueness of `Derives` — is resolved above.)
 
-- **Precondition laundering.** `Format.lean`'s `FROM < TO` check and
-  `Core.lean`'s `isOrdered` are two independent implementations of what
-  should be one invariant. Do they actually agree on every input? (We have
-  not proven they do — only observed that they don't disagree yet.)
-
-- **Uniqueness of `Derives`.** The `sound` theorems show *a* derivation
-  exists for `run`'s output. Do they rule out some *other* list also
-  satisfying `Derives` for the same graph? If `Derives` is not provably
-  functional, "sound" may be compatible with multiple, inconsistent
-  "correct" answers.
+- **Precondition laundering.** (Naming the smell: a precondition gets
+  re-derived from scratch in a second place instead of being stated once
+  and reused, so the two copies can silently drift apart.) `Format.lean`'s
+  `FROM < TO` check and `Core.lean`'s `isOrdered` are two independent
+  implementations of what should be one invariant. Do they actually agree
+  on every input? (We have not proven they do — only observed that they
+  don't disagree yet.)
 
 - **State reuse / stale `done`.** `lookup` takes an arbitrary `List α` as
   `done`. Nothing in its type ties `done`'s length to "exactly the rows

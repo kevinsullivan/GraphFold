@@ -1,16 +1,5 @@
 # GraphFold — a semiring-parametric theory of graph folds in Lean 4
 
-GraphFold is also a small case study in two things at once: how one
-abstract theory, exposed as a tiny library API, serves three genuinely
-different algorithms as instances of the same recurrence — and why
-"formally verified" is not the reassurance it sounds like. This project was
-vibe-coded in Lean, is fully tested, and has no `sorry` anywhere, and it
-*still* turned out to have a real specification gap, found within minutes
-of asking what else could be wrong rather than whether it ran. See
-[§9](#9-what-vibe-coding-cant-tell-you) and
-[`whatCanGoWrongSpecGaps.lean`](whatCanGoWrongSpecGaps.lean) for the story;
-treat that as a standing warning before trusting anything below it.
-
 ## Quick start
 
 1. Open this folder in VS Code. It will prompt you to install the recommended **Lean 4** extension if you don't already have it — accept that prompt. (If you missed or dismissed it, open the Extensions panel — **Cmd+Shift+X** on macOS, **Ctrl+Shift+X** on Windows/Linux — search for "Lean 4", and install it manually.) Then open any `.lean` file; this triggers a one-time download of the Lean toolchain and dependencies — wait for it to finish before continuing.
@@ -39,7 +28,7 @@ treat that as a standing warning before trusting anything below it.
 
 ## Overview
 
-GraphFold presents a formalized **theory of generalized folds over directed acyclic graphs (DAGs)**, parameterized by the choice of an algebra—typically a semiring. Rather than treating shortest-path calculation, path counting, and path-cost enumeration as unrelated programs, it reveals their shared mathematical structure: values propagated along edges are combined at each vertex according to algebraic operations chosen for the particular problem. A single graph-recursion pattern consequently yields several notably different graph algorithms.
+GraphFold presents a formalized **theory of generalized folds over directed acyclic graphs (DAGs)**, parameterized by the choice of an algebra—typically a semiring. A GUI lets you enter graph specifications and animate execution traces for three distinct graph algorithms, each selected just by choosing a concrete `Algebra` instance. Rather than treating shortest-path calculation, path counting, and path-cost enumeration as unrelated programs, it reveals their shared mathematical structure: values propagated along edges are combined at each vertex according to algebraic operations chosen for the particular problem. A single graph-recursion pattern consequently yields several notably different graph algorithms.
 
 The project also illustrates a broader role for dependent type theory. **Beyond enabling verification of individual programs, an expressive type system allows the common mathematical foundations of distinct computations to be represented explicitly as reusable definitions, specifications, and proofs.** In Lean 4, the algebra and graph dependency structure can be separated from implementations, while independently developed *proof bridges* establish how each concrete implementation realizes the abstract recurrence. The objective is not merely to verify three algorithms but to understand, in a precise and reusable way, *why they are instances of the same theory*.
 
@@ -60,7 +49,25 @@ $$
 
 Different choices of `⊕`, `⊗`, and `b` give different meanings to the same graph computation. GraphFold implements three examples: minimum path cost, number of paths, and the multiset of all path costs (from which minima and counts of optimal paths can be extracted). For finite DAGs, a topological evaluation order makes the recurrence a well-founded fold; cyclic graphs require a separate fixed-point or closure treatment and are outside the present executables' scope.
 
-**Historical context.** This is an application of the established *algebraic path problem*. B. A. Carré's 1971 paper, [“An Algebra for Network Routing Problems”](https://doi.org/10.1093/imamat/7.3.273), is a direct early articulation of the common algebra underlying different routing computations. Related developments include R. C. Backhouse and Carré's *Regular Algebra Applied to Path-Finding Problems* (1975), [Michel Minoux's generalization of algebraic path structures](https://www.numdam.org/item/RO_1976__10_2_33_0/) (1976), and [Daniel J. Lehmann's closed-semiring treatment of transitive closure](https://doi.org/10.1016/0304-3975(77)90056-1) (1977). These developments built on earlier path, automata, and dynamic-programming algorithms. For a recent treatment connecting semiring algebras to dynamic programming more broadly — including a new operation for counting minimal-cost solutions — see A. Baril, M. Couceiro, and V. Lagerkvist, [“New Perspectives on Semiring Applications to Dynamic Programming”](https://doi.org/10.1016/j.dam.2025.12.035), *Discrete Applied Mathematics*, vol. 383, pp. 243–279, 2026.
+All of that is so cool. But engineering (as everyone knows) is not about cool. It's about solving problems,
+usually by technological means (including processes), without inadvertently causing or unacceptably risking harmful outcomes.
+
+So beyond getting some of it right, GraphFold is also a small case
+study in the dependability of casually vibe-coded systems with formal proofs
+of correctness, by virtue of its having been vibe-coded in Lean 4 rather than
+in an industrial imperative language, for example.
+
+It's impressive-sounding for the bot to proclaim your system — and here
+I do quote the bot — fully tested, with no `sorry` anywhere. Sounds great,
+ship it! Uh, wait one moment please. All that is true, and yet, alas, it has
+several specification gaps and other basic quality problems. Proofs plus AI
+is without question a new kind of rocket fuel. And that means you really can
+get burned.
+See [§9](#9-what-can-still-go-wrong) and
+[`whatCanGoWrongSpecGaps.lean`](whatCanGoWrongSpecGaps.lean) for technical
+details. And now back to the show.
+
+**Historical context.** This repo provides an abstract formalization and three verified instances of it, applying the established *algebraic path problem*. B. A. Carré's 1971 paper, [“An Algebra for Network Routing Problems”](https://doi.org/10.1093/imamat/7.3.273), is a direct early articulation of the common algebra underlying different routing computations. Related developments include R. C. Backhouse and Carré's *Regular Algebra Applied to Path-Finding Problems* (1975), [Michel Minoux's generalization of algebraic path structures](https://www.numdam.org/item/RO_1976__10_2_33_0/) (1976), and [Daniel J. Lehmann's closed-semiring treatment of transitive closure](https://doi.org/10.1016/0304-3975(77)90056-1) (1977). These developments built on earlier path, automata, and dynamic-programming algorithms. For a recent treatment connecting semiring algebras to dynamic programming more broadly — including a new operation for counting minimal-cost solutions — see A. Baril, M. Couceiro, and V. Lagerkvist, [“New Perspectives on Semiring Applications to Dynamic Programming”](https://doi.org/10.1016/j.dam.2025.12.035), *Discrete Applied Mathematics*, vol. 383, pp. 243–279, 2026.
 
 **Formalization scope.** GraphFold uses **Lean 4 / Lake, without Mathlib**, and term-mode proofs with explicit types. Its core `Algebra α` asks only for the two laws on `⊕` that the implemented recurrence and fold proofs actually use — associativity and a right identity (`zero`) — and imposes no laws on `⊗` at all; a separate `SemiringLaws` record states the stronger axioms of a full semiring (commutativity of `⊕`, associativity of `⊗`, an identity `one` for `⊗`, etc.). Consequently, the implementation bridges certify the recurrence at the abstraction level actually used; they should not be mistaken for proofs of every semiring law or for graph-theoretic correctness over arbitrary cyclic graphs. The source code and tests are intended as a pedagogical formalization, and building them with Lean remains necessary to check kernel acceptance.
 
@@ -529,46 +536,44 @@ controls remain functional without external fonts, stylesheets, or JavaScript li
 The desktop and tablet screenshots are generated by `python web/test/browser_smoke.py`
 using Chromium with a controlled trace fixture.
 
-## 9. What vibe coding can't tell you
+## 9. What can still go wrong
 
-In its current state, this project is the result of about an hour and a
-half of vibe coding in Lean. It's all based on real math — the algebraic
+AI plus proof assistants is a radical advance. In its current state, this
+project is the result of maybe two hours of vibe coding in Lean. It's all
+based on real math — the algebraic
 path problem is decades old and well-studied. It's all "verified" — the
 proofs compile, there's no `sorry` anywhere, the test suite passes, the
 CLI and web UI both produce correct-looking answers on every input anyone
 has tried. So we're good, right?
 
-No. Be an engineer. An engineer's most solemn duty is not to build the
-thing — it's to ask, relentlessly, *what else could be wrong*, and to make
-sure it isn't. Running the code on more inputs doesn't answer that question;
-it just raises your confidence that you haven't yet stumbled on the input
-that breaks it. The question that actually matters is what the proofs
-*say*, exactly — not what their presence implies.
+No. Be an engineer. Real engineers relentlessly ask *what else could be
+wrong*. Then they make sure it doesn't go wrong. Knuth is widely quoted as
+having warned: "Beware of bugs in the above code; I have only proved it
+correct, not tried it." Other things can go wrong too — compiler or kernel
+bugs, hardware errors — but what Knuth was really telling us is that a proof
+only proves the spec that you, or more likely now your bot, wrote down.
+Ask an AI. I did. It's a step, anyway.
 
-A quick critical review of exactly that question — see
-[`whatCanGoWrongSpecGaps.lean`](whatCanGoWrongSpecGaps.lean) — turned up a
-real one within minutes: `Shortest.run`, `Paths.run`, and `Optimal.run` all
+So now we unveil the mystery. See the file called
+[`whatCanGoWrongSpecGaps.lean`](whatCanGoWrongSpecGaps.lean). The AI turned
+up a fault within a minute: `Shortest.run`, `Paths.run`, and `Optimal.run` all
 accept a graph with a genuine circular dependency and silently return a
-plausible-looking answer, no error, no warning. The file-based CLI and web
-UI are protected (the parser rejects `FROM < TO` violations), but the
-*library* API — the one `README.md` §4 tells you to use directly in Lean —
-is not. And the soundness theorems (`Shortest.sound`, `Paths.sound`,
+plausible-looking answer, without warning. The file-based CLI and web
+UI are protected (the parser rejects `FROM < TO` violations). The *library*
+API — the one `README.md` §4 tells you to use directly in Lean —
+does not. And the soundness theorems (`Shortest.sound`, `Paths.sound`,
 `Optimal.sound`) typecheck without complaint on the cyclic input, because
 `Derives`/`Satisfies` never asserted acyclicity in the first place. The
-proof isn't wrong. It just proves less than the English prose around it
-implies.
+proof isn't wrong. It just proves less than you think it does.
 
-That's the lesson, and it generalizes well past this one project:
-**impressive proofs are software too.** A specification can have exactly
-the same kind of gap as an implementation — a missing precondition, a
-silently-defaulted edge case, a check that exists but is never wired in —
-and a theorem sitting on top of that gap is no more trustworthy than the
-gap itself. "Formally verified" is not a finish line; it's a claim about
-one specific proposition, and the proposition can be weaker than it sounds.
-Abstract formal methods, verified implementations, everything appearing to
-work — taken at face value, that appearance should generally be treated as
-suspect, not reassuring. Knuth's quip about proving code correct without
-trying it is usually read as "testing still matters." The sharper reading,
-and the one this project ran into directly, is that **the proof itself can
-have a specification gap**, and no amount of testing a narrow implementation
-notices a gap in the thing the testing was supposed to be checking against.
+A specification can have exactly the same kind of gap as an implementation.
+Examples could include a missing precondition, a false precondition (in which
+case anything can be proved), or a check that exists but is never used.
+
+"Formally verified" is not a finish line; it's a claim about one proposition,
+and the proposition can be weaker than it sounds. Knuth's quip about proving
+code correct without trying it could be read as "testing still matters." But
+his real message runs deeper: even with proofs in hand, they have to be
+proofs of the right proposition — the right specification.
+
+OK, now, over to you. What's the fix?
