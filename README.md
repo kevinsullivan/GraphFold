@@ -70,7 +70,10 @@ nonnegative integer labels. It contains **no algebra-specific base values**.
 
 ## 2. Build and run
 
-Install [elan](https://lean-lang.org/lean4/doc/setup.html) with Lean 4 and Lake:
+First, in VS Code, click on any `.lean` file in this project. If Lean is
+already installed natively, this just confirms it; if not, it triggers a
+one-time download of [elan](https://lean-lang.org/lean4/doc/setup.html),
+Lean 4, and Lake — wait for that download to finish before continuing.
 
 ```sh
 cd GraphFold
