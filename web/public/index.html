@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GraphFold — Graph algorithms</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" type="module"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><div class="mark" aria-hidden="true">∑</div><div><div class="name">GraphFold</div><div class="tagline">Graph algorithms</div></div></div>
+    <div class="header-right"><span class="dot"></span> Local server</div>
+  </header>
+  <main>
+    <div class="intro"><div><div class="eyebrow"></div><h1>Graph evaluation</h1><p>Enter a directed acyclic graph. Select an algorithm to compute results or view its execution trace.</p></div><div class="formula" aria-label="F of v equals b of v plus aggregated predecessor contributions">F(v) = b(v) ⊕ ⨁ <span class="smallformula">(F(u) ⊗ w(u,v))</span></div></div>
+    <div class="workspace">
+      <section class="panel editor-panel" aria-labelledby="input-heading">
+        <div class="panelhead"><div><span class="panelnumber">INPUT</span><h2 id="input-heading">Graph definition</h2></div><span class="filetype">EDGE LIST</span></div>
+        <div class="editor-wrap"><div class="line-numbers" id="line-numbers" aria-hidden="true"></div><textarea id="graph-text" spellcheck="false" aria-label="Graph edge list" wrap="off"># A four-vertex directed acyclic graph
+vertices 4
+source 0
+
+edge 0 1 2
+edge 0 2 5
+edge 1 2 3
+edge 1 3 1
+edge 2 3 1</textarea></div>
+        <div class="status-row"><span id="parse-status" role="status" aria-live="polite">Checking graph…</span><button id="reset" class="textbutton" type="button">Reset example</button></div>
+        <div class="syntax"><div class="syntax-title">INPUT SYNTAX</div><code>vertices N</code><span>Number of vertices (0 to N−1)</span><code>source S</code><span>Starting vertex</span><code>edge U V W</code><span>U → V, edge weight W</span></div>
+      </section>
+      <section class="panel visual-panel" aria-labelledby="graph-heading">
+        <div class="panelhead"><div><span class="panelnumber">GRAPH</span><h2 id="graph-heading">Directed graph</h2></div><span id="graph-count" class="filetype">—</span></div>
+        <div class="graph-stage" id="graph-stage"><svg id="graph-svg" role="img" aria-label="Diagram of the directed graph" viewBox="0 0 760 450" preserveAspectRatio="xMidYMid meet"></svg><div id="graph-error" class="graph-error" hidden></div></div>
+        <div class="graph-legend"><span><i class="legend-node source"></i> Source vertex</span><span><i class="legend-node"></i> Vertex</span><span><i class="legend-line"></i> Directed weighted edge</span></div>
+      </section>
+    </div>
+    <section class="result-panel" aria-labelledby="evaluation-heading">
+      <div class="result-title"><div><span class="panelnumber">RESULTS</span><h2 id="evaluation-heading">Run algorithm</h2></div><div class="actions"><button class="run primary" type="button" id="run-shortest"><span class="run-symbol">↘</span> Shortest paths <span class="run-sub">MIN · PLUS</span></button><button class="run secondary" type="button" id="run-paths"><span class="run-symbol">⑂</span> Count paths <span class="run-sub">PLUS · TIMES</span></button><button class="run tertiary" type="button" id="run-optimal"><span class="run-symbol">✧</span> Optimal routes <span class="run-sub">COST SPECTRA</span></button></div></div>
+      <div class="results-body"><div class="results-info"><div id="result-name" class="result-name">No evaluation yet</div><div id="result-description" class="result-description">Select an algorithm to run the Lean executable.</div></div><div id="result-output" class="output" role="status" aria-live="polite"><span class="empty-output">No results</span></div></div>
+      <div class="result-footer"><span>SHORTEST PATHS · EDGE LABELS ARE COSTS</span><span>PATH COUNTS · EACH EDGE COUNTS ONCE</span><span>OPTIMAL ROUTES · MINIMUM COST + NUMBER OF TIES</span></div>
+    </section>
+    <section class="animation-panel" aria-labelledby="animation-heading">
+      <div class="animation-header">
+        <div><span class="panelnumber">TRACE</span><h2 id="animation-heading">Execution trace</h2><p>Recorded steps from the Lean executable.</p></div>
+        <div class="animation-mode" id="animation-mode">SELECT AN ALGORITHM</div>
+      </div>
+      <div class="animation-controls">
+        <button type="button" id="trace-prepare" class="trace-button trace-primary" disabled>Load trace</button>
+        <button type="button" id="trace-prev" class="trace-button" disabled aria-label="Previous step">← Previous</button>
+        <button type="button" id="trace-play" class="trace-button" disabled>▶ Play</button>
+        <button type="button" id="trace-next" class="trace-button" disabled aria-label="Next step">Next →</button>
+        <button type="button" id="trace-reset" class="trace-button" disabled>↺ Restart</button>
+        <label class="speed-label" for="trace-speed">Step delay <strong id="speed-label">1.5 s</strong></label>
+        <input id="trace-speed" type="range" min="350" max="4000" value="1500" step="50" aria-label="Milliseconds per animation step">
+      </div>
+      <div class="trace-progress"><div id="trace-progress-fill"></div></div>
+      <div class="trace-body">
+        <div class="trace-detail">
+          <div id="trace-counter" class="trace-counter">NO TRACE LOADED</div>
+          <h3 id="trace-title">No trace loaded</h3>
+          <p id="trace-explanation">Run an algorithm, then use the playback controls.</p>
+          <div class="trace-equation" id="trace-equation">F(v) = b(v) ⊕ Σ(F(u) ⊗ w(u,v))</div>
+        </div>
+        <div class="trace-values"><div class="trace-values-heading">VERTEX VALUES <span>— = not finalized</span></div><div id="trace-value-grid" class="trace-value-grid"></div></div>
+      </div>
+      <p class="trace-note">Gold: current vertex. Blue: predecessor. Highlighted edge: current contribution.</p>
+    </section>
+    <footer>GRAPHFOLD <span>·</span> LEAN 4 <span>·</span> EDGES REQUIRE U &lt; V</footer>
+  </main>
+</body>
+</html>

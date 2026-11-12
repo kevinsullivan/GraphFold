@@ -1,0 +1,8 @@
+# Two equally cheap but distinct paths reach vertex 3.
+# Route 0 -> 1 -> 3 costs 2+3=5; 0 -> 2 -> 3 costs 1+4=5.
+vertices 4
+source 0
+edge 0 1 2
+edge 0 2 1
+edge 1 3 3
+edge 2 3 4

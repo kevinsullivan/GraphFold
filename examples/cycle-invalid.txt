@@ -1,0 +1,5 @@
+# Not accepted: edge 1 -> 0 is a backward edge (and the edges form a cycle).
+vertices 2
+source 0
+edge 0 1 2
+edge 1 0 3

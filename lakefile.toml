@@ -1,0 +1,26 @@
+name = "graphfold"
+version = "0.1.0"
+defaultTargets = ["GraphFold", "shortest", "paths", "optimal", "graphfold_tests", "trace"]
+
+[[lean_lib]]
+name = "GraphFold"
+
+[[lean_exe]]
+name = "shortest"
+root = "ShortestMain"
+
+[[lean_exe]]
+name = "paths"
+root = "PathsMain"
+
+[[lean_exe]]
+name = "optimal"
+root = "OptimalMain"
+
+[[lean_exe]]
+name = "graphfold_tests"
+root = "Tests.Main"
+
+[[lean_exe]]
+name = "trace"
+root = "TraceMain"

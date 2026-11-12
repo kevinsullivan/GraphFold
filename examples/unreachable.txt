@@ -1,0 +1,4 @@
+# Vertex 2 is not reachable from source 0.
+vertices 3
+source 0
+edge 0 1 7
