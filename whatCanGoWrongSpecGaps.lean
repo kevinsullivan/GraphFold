@@ -300,6 +300,6 @@ item that used to be here — uniqueness of `Derives` — is resolved above.)
 
 The decisive move is not running more examples. It is picking one of the
 questions above, stating it as a proposition Lean can check, and seeing
-whether it's provable, disprovable, or — as with Gap 1 — true in a much
+whether it's provable, disprovable, or — as with Gap 1 — true in some
 weaker sense than the English prose around it suggests.
 -/

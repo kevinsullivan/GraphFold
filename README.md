@@ -67,7 +67,7 @@ See the "What can still go wrong" section near the end of this document, and
 [`whatCanGoWrongSpecGaps.lean`](whatCanGoWrongSpecGaps.lean), for technical
 details. And now back to the show.
 
-**Historical context.** This repo provides an abstract formalization and three verified instances of it, applying the established *algebraic path problem*. B. A. Carré's 1971 paper, [“An Algebra for Network Routing Problems”](https://doi.org/10.1093/imamat/7.3.273), is a direct early articulation of the common algebra underlying different routing computations. Related developments include R. C. Backhouse and Carré's *Regular Algebra Applied to Path-Finding Problems* (1975), [Michel Minoux's generalization of algebraic path structures](https://www.numdam.org/item/RO_1976__10_2_33_0/) (1976), and [Daniel J. Lehmann's closed-semiring treatment of transitive closure](https://doi.org/10.1016/0304-3975(77)90056-1) (1977). These developments built on earlier path, automata, and dynamic-programming algorithms. For a recent treatment connecting semiring algebras to dynamic programming more broadly — including a new operation for counting minimal-cost solutions — see A. Baril, M. Couceiro, and V. Lagerkvist, [“New Perspectives on Semiring Applications to Dynamic Programming”](https://doi.org/10.1016/j.dam.2025.12.035), *Discrete Applied Mathematics*, vol. 383, pp. 243–279, 2026.
+**Historical context.** This repo provides an abstract formalization and three verified instances of it, applying the established *algebraic path problem*. B. A. Carré's 1971 paper, [“An Algebra for Network Routing Problems”](https://doi.org/10.1093/imamat/7.3.273), is a direct early articulation of the common algebra underlying different routing computations. Related developments include R. C. Backhouse and Carré's *Regular Algebra Applied to Path-Finding Problems* (1975), [Michel Minoux's generalization of algebraic path structures](https://www.numdam.org/item/RO_1976__10_2_33_0/) (1976), and [Daniel J. Lehmann's closed-semiring treatment of transitive closure](https://doi.org/10.1016/0304-3975(77)90056-1) (1977). These developments built on earlier path, automata, and dynamic-programming algorithms. Mehryar Mohri's [“Semiring Frameworks and Algorithms for Shortest-Distance Problems”](https://cs.nyu.edu/~mohri/pub/jalc.pdf), *Journal of Automata, Languages and Combinatorics*, vol. 7, no. 3, pp. 321–350, 2002, gives the modern statement of this correctness pattern: the shortest distance is defined independently of any algorithm, as a sum over the actual set of paths, and an algorithm's output is only equated to it under an explicit hypothesis (acyclicity, or more generally k-closedness). For a recent treatment connecting semiring algebras to dynamic programming more broadly — including a new operation for counting minimal-cost solutions — see A. Baril, M. Couceiro, and V. Lagerkvist, [“New Perspectives on Semiring Applications to Dynamic Programming”](https://doi.org/10.1016/j.dam.2025.12.035), *Discrete Applied Mathematics*, vol. 383, pp. 243–279, 2026.
 
 **Formalization scope.** GraphFold uses **Lean 4 / Lake, without Mathlib**, and term-mode proofs with explicit types. Its core `Algebra α` asks only for the two laws on `⊕` that the implemented recurrence and fold proofs actually use — associativity and a right identity (`zero`) — and imposes no laws on `⊗` at all; a separate `SemiringLaws` record states the stronger axioms of a full semiring (commutativity of `⊕`, associativity of `⊗`, an identity `one` for `⊗`, etc.). Consequently, the implementation bridges certify the recurrence at the abstraction level actually used; they should not be mistaken for proofs of every semiring law or for graph-theoretic correctness over arbitrary cyclic graphs. The source code and tests are intended as a pedagogical formalization, and building them with Lean remains necessary to check kernel acceptance.
 
@@ -576,5 +576,40 @@ and the proposition can be weaker than it sounds. Knuth's quip about proving
 code correct without trying it could be read as "testing still matters." But
 his real message runs deeper: even with proofs in hand, they have to be
 proofs of the right proposition — the right specification.
+
+### Further investigation showed
+
+Not every thread pulled on this turned out to be a gap, and the one real
+gap turned out to have a precise, citable root cause — both worth reporting
+alongside the original finding.
+
+First, a worry that looked serious on paper resolved cleanly: does the
+"sound" theorem's underlying relation, `Derives`, actually pin down a
+*unique* answer, or could a fixed input be compatible with multiple,
+inconsistent "correct" outputs? It's provably unique — `Derives.unique` in
+`whatCanGoWrongSpecGaps.lean` proves it, in term mode, depending only on
+the standard `propext` axiom. That worry was unfounded, and it's useful to
+know it's unfounded rather than just unaddressed.
+
+Second, the cyclic-graph bug itself traces to a precise formalization error
+once checked against the literature this project's own Historical Context
+section already cites. Mehryar Mohri's "Semiring Frameworks and Algorithms
+for Shortest-Distance Problems" (2002) always defines the target quantity
+— the shortest distance itself — independently of any algorithm, as a sum
+over the actual set of paths, and only ever equates an algorithm's output
+to that target *under an explicit hypothesis* (his Corollary 2: the graph
+is acyclic). GraphFold has no analogue of that independent target anywhere
+in `Core.lean`. `Derives`/`Satisfies` only assert that two renderings of
+`specStep`'s own recursive unfolding agree with each other — a claim about
+the algorithm's self-consistency, not its correctness against an
+independent mathematical quantity. That's a strictly weaker kind of
+theorem than the literature's, and it's weaker in exactly the place that
+matters: with no independent target, there is nothing for a cyclic input's
+output to be wrong *relative to*, which is exactly why the soundness
+proofs raise no objection to one. The `Algebra` laws themselves are not
+the error — the literature's own proof confirms acyclicity alone needs no
+extra algebraic structure — the error is the missing hypothesis and the
+missing independent specification, both of which the cited literature
+states as a matter of course.
 
 OK, now, over to you. What's the fix?
