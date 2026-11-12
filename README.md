@@ -1,26 +1,55 @@
 # GraphFold — a simple case study on auto-formalization errors
 
+TLDR: verification ≠ validation. Lean 4 nails one. You need both.
+A small case study of a *seemingly* good formalization verified by
+the Lean 4 kernel.
+
+## Overview
+
 The prominent researcher into autoformalization of mathematics in
-Lean, Kevin Buzzard, has written an easy, non-technical [blog post
-here (link)](https://xenaproject.wordpress.com/2026/11/12/and-the-proof-is-checked-in-lean/) on what can still go wrong even
-if you think you've formalized the mathematical theory of your
-domain in Lean 4 and proven your implemnentations correct against
+Lean, Kevin Buzzard, has written a non-technical [blog
+post](https://xenaproject.wordpress.com/2026/11/12/and-the-proof-is-checked-in-lean/) on what can still go wrong even if you think you've formalized the mathematical theory of your domain in Lean 4 and proven your implementations correct against
 it. Take five minutes to read it then continue through the rest of
 this explanatory document.
 
-This document and repository provides a concrete case study that
-started with a quick vibe-coding effort to produce a lesson for my
-students, with two main points. First, parameterizing algorithms
+The question, channeling Boehm,
+*Did I build the thing right?* is orthogonal to the question, *Did
+I build the right thing?* Basic software quality assurance (and make
+no mistake; verified Lean is software) requires both. Lean 4 verifies.
+It is not designed for, and is not trustworthy for, software
+*validation*. This project thus comprises a case study centered on an
+example of what did go wrong in a small use of autoformalization and
+vibe coding of a *formally verified* but *not* carefully *validated*
+software system, exactly as described by Kevin Buzzard, albeit not in
+these terms.
+
+This project started with a quick vibe-coding effort to produce an
+example of the power of algorithms parameterized by diverse instances of
+algebraic structures. In particular, one algorithm parameterized by a
+concrete instance of a *semiring* yields diverse graph algorithms that
+otherwise appear only loosely related, as though not grounded in a shared
+foundation. The intended lesson was: you've seen folds parameterized
+by polymorphic container type (list, tree, option, etc.). Now you see
+parameterization by a concrete instance of an abstract semiring. The core algorithm
+is defined against abstract semiring + and * operations and identity
+values, with a choice of, e.g., a semiring structure on Bool, Nat,
+or on paths equipped with a so-called min-plus algebra. The results
+are respectively graph algorithms for (1) computing shortest paths,
+(2) counting the total number of paths regardless of cost, and
+(3) computing the complete multiset of path costs, from which the
+minimum cost and the number of tied optimal routes can be extracted.
+
+First, parameterizing algorithms
 by diverse concrete instances of abstract algebraic structures can
-reveal deep commonalities among seemingly divrse algoriths, and an
-architectural style for verified code that separately specifies the
-abstract theory (often uncomputable), divrse concrete, computable
+reveal deep commonalities among seemingly diverse algorithms, and supports
+an architectural style for verified code that separately specifies the
+abstract theory (often uncomputable), diverse concrete, computable
 implementations, and modular proofs that the implementations satisfy
 the formal specifications.
 
 What this effort turned into fortuitously was a pretty accessible
 case study illustrating what I'd consider the most threatening
-of Buzzard's can-also-go-wrong failure modes: not errors proofs but
+of Buzzard's can-also-go-wrong failure modes: not errors in proofs but
 in the statements of the very propositions to be proved, especially
 when auto-formalized by inductive reasoning systems: generative AI.
 To be clear, the construction here is broken in just the right way,
@@ -29,10 +58,10 @@ my students with a reasonably accessible example from real-world work.
 
 The repo, and most of the rest of this document, are thus written as
 if they presented a *validated* (1) Lean-verified auto-formalization
-of abstract graph folds; (2) three different graph algorithms each
+of abstract graph folds; (2) three different graph algorithms, each
 a specialization by choice of an actual concrete semiring instance,
-formally verified against the abstract theory,and; (3) its compilation
-into (a) three executables, one for each algorithm; (b) and a Lean library
+formally verified against the abstract theory; and (3) its compilation
+into (a) three executables, one for each algorithm, and (b) a Lean library
 that makes this work easily usable by other clients; and (4) a fun
 interactive, animated, pedagogical, web-based user interface for (a)
 giving graph inputs as text, (b) selecting and running one of the
@@ -40,32 +69,36 @@ algorithms on the given graph, and (c) stepping through an animation
 to see the algorithm working step by step as it folds a graph down
 to a single answer from a given node, recursively, one outgoing edge
 at a time, down to a final result, e.g., shortest path, number of
-shortest paths, etc. I found the animation helped me to check my
-understanding of how each of the particular algoriths works.
+paths, etc. I found the animation helped me to check my
+understanding of how each of the particular algorithms works.
 
-I vibe-coded this whoel project in Lean 4 and HTML in about two
+I vibe-coded this whole project in Lean 4 and HTML in about two
 hours, starting by having my AI auto-formalize an original work,
 the paper by Mehryar Mohri, "Semiring Frameworks and Algorithms
 for Shortest-Distance Problems" (2002).
 
-I did not check the generated code but but Lean accepts all the
-proofs and I trust it implicitly. Also graphical animations of the
-algorithms in action, step by step, is really cool. So am I done?
-Can I ship it to production now? Well, at this point, it's time to
-put on your real engineer's hard hat, think like a real engineer,  
-and ask the most vital question of all: *what else could go wrong?*
+I did *not* hand-check the generated code but Lean accepts all the
+proofs and (pretending) I trusted it implicitly. Also graphical
+animations of the algorithms are really cool and I'm sure people
+will love it. So am I done? Can I ship it to production now?
 
-To proceed follow the easy Quick Start instructions below to bring
+At this point, it's time to put on your engineer's hard hat, start
+to think like a real engineer, and ask the most vital question of
+all: *what else could go wrong?* This project presents an unedited
+case of what *did* go wrong and what I might have just let slide if
+I didn't actually know better.
+
+To proceed, follow the easy Quick Start instructions below to bring
 up our systems. Open the browser tool. It gives you a small graph to
-start with, which you can edit directly. When read, push one of the
+start with, which you can edit directly. When ready, push one of the
 three buttons to run one of the algorithms to produce an answer for
 your graph, then step through the stored trace of that execution to
 see visually how the algorithm works at each step to reduce a whole
-graph to the require result.
+graph to the required result.
 
 Once you've done all that, come back here, be seduced by the magic
 of AI + Lean, and then have eyes opened by seeing exactly what can
-and did go wrong even on a small-scale auto-formaliation and verified
+and did go wrong even on a small-scale auto-formalization and verified
 implementation effort. The walk-away message: verification of code
 against a specification is only half the battle. The other half is
 the *validation* of the specification itself.
@@ -121,23 +154,12 @@ $$
 
 Different choices of `⊕`, `⊗`, and `b` give different meanings to the same graph computation. GraphFold implements three examples: minimum path cost, number of paths, and the multiset of all path costs (from which minima and counts of optimal paths can be extracted). For finite DAGs, a topological evaluation order makes the recurrence a well-founded fold; cyclic graphs require a separate fixed-point or closure treatment and are outside the present executables' scope.
 
-All of that is so cool. But engineering (as everyone knows) is not about cool. It's about solving problems,
-usually by technological means (including processes), without inadvertently causing or unacceptably risking harmful outcomes.
-
-So beyond getting some of it right, GraphFold is also a small case
-study in the dependability of casually vibe-coded systems with formal proofs
-of correctness, by virtue of its having been vibe-coded in Lean 4 rather than
-in an industrial imperative language, for example.
-
-It's impressive-sounding for the bot to proclaim your system — and here
-I do quote the bot — fully tested, with no `sorry` anywhere. Sounds great,
-ship it! Uh, wait one moment please. All that is true, and yet, alas, it has
-several specification gaps and other basic quality problems. Proofs plus AI
-is without question a new kind of rocket fuel. And that means you really can
-get burned.
-See the "What can still go wrong" section near the end of this document, and
-[`whatCanGoWrongSpecGaps.lean`](whatCanGoWrongSpecGaps.lean), for technical
-details. And now back to the show.
+All of that is so cool. But engineering (as everyone knows) is not about cool. It's about
+solving problems by technological means with *justified* confidence that the results won't
+fail in ways that contribute to (or substantially risk) unacceptably harmful outcomes.
+It's impressive-sounding when an AI reports, as mine did (and I quote it), that the system
+is *fully tested, with no `sorry` anywhere.* That might warm the cockles of a programmer's
+heart, but it shouldn't.
 
 **Historical context.** This repo provides an abstract formalization and three verified instances of it, applying the established *algebraic path problem*. B. A. Carré's 1971 paper, [“An Algebra for Network Routing Problems”](https://doi.org/10.1093/imamat/7.3.273), is a direct early articulation of the common algebra underlying different routing computations. Related developments include R. C. Backhouse and Carré's *Regular Algebra Applied to Path-Finding Problems* (1975), [Michel Minoux's generalization of algebraic path structures](https://www.numdam.org/item/RO_1976__10_2_33_0/) (1976), and [Daniel J. Lehmann's closed-semiring treatment of transitive closure](https://doi.org/10.1016/0304-3975(77)90056-1) (1977). These developments built on earlier path, automata, and dynamic-programming algorithms. Mehryar Mohri's [“Semiring Frameworks and Algorithms for Shortest-Distance Problems”](https://cs.nyu.edu/~mohri/pub/jalc.pdf), *Journal of Automata, Languages and Combinatorics*, vol. 7, no. 3, pp. 321–350, 2002, gives the modern statement of this correctness pattern: the shortest distance is defined independently of any algorithm, as a sum over the actual set of paths, and an algorithm's output is only equated to it under an explicit hypothesis (acyclicity, or more generally k-closedness). For a recent treatment connecting semiring algebras to dynamic programming more broadly — including a new operation for counting minimal-cost solutions — see A. Baril, M. Couceiro, and V. Lagerkvist, [“New Perspectives on Semiring Applications to Dynamic Programming”](https://doi.org/10.1016/j.dam.2025.12.035), *Discrete Applied Mathematics*, vol. 383, pp. 243–279, 2026.
 
@@ -448,8 +470,10 @@ referenced predecessor is in the computed prefix when evaluated.
 ## 6. Scope and limitations
 
 The algebra and abstract recurrence can be *stated* for arbitrary finite graphs.
-The sequential implementation assumes all predecessors are processed earlier,
-enforced by the **file parser** by its `FROM node label < TO node label` constraint. Cyclic graphs are *not* within the scope of our algorithm, and need a separate fixed-point semantics and corresponding algorithm and proof.
+The sequential implementation assumes all predecessors are processed earlier;
+this is enforced by the **file parser**'s `FROM < TO` constraint. Cyclic graphs
+are *not* within the scope of our algorithm, and need a separate fixed-point
+semantics and corresponding algorithm and proof.
 
 `SemiringLaws` states the stronger full-semiring axioms, but none of the three
 implementations need to or do fully prove their operations satisfy all of them.
@@ -462,11 +486,14 @@ Picking one implementation and defining a `SemiringLaws` instance for
 it (proving, for example, that `⊕` is commutative or that `⊗` distributes
 over `⊕`) would be a good follow-on exercise.
 
-List-based prefix appends are intentionally simple rather than asymptotically optimized, and profiling for performance bugs and fixing them is another.
+List-based prefix appends are intentionally simple rather than asymptotically
+optimized, and profiling for performance bugs and fixing them would be another.
 
 Or do it all. Prove the uniqueness of `Derives`. Certify the full semiring laws.
-Derive an optimized implementation by replacing list accumulation with arrays or
-hash tables and proving that the fast code is equivalent to the liproof-friendly  refinement, add a general topological-sort phase, and formalize a *fixed-point* semantics for cycles.
+Derive an optimized implementation by replacing list accumulation with arrays
+or hash tables, and prove that the fast version is equivalent to the
+proof-friendly list-based one. Add a general topological-sort phase. Formalize
+a *fixed-point* semantics for cycles.
 
 ## 7. Interactive local HTML interface
 
@@ -623,7 +650,7 @@ So we're good, right?
 No. Again, think like an engineer with a moral obligation to protect
 users from errors that cause unacceptable harms. Real engineers ask
 relentlessly *what else could go wrong* and then they make sure that
-that doesn't happen. 
+doesn't happen.
 
 Knuth is widely quoted as having warned: "Beware of bugs in the above
 code; I have only proved it correct, not tried it." The failure modes
@@ -633,28 +660,30 @@ testing, but what he was really telling us is that a proof only proves
 that the code satisfies the specification, not that the specification
 itself is right. That's the failure mode this case study is about.
 
-To see proofs and a code-based explanation of the failure, se  the file 
+To see proofs and a code-based explanation of the failure, see the file
 called [`whatCanGoWrongSpecGaps.lean`](whatCanGoWrongSpecGaps.lean). An
-AI, prompted to check our formalization against the actual published work
-found the failure in this case within a minute: `Shortest.run`, `Paths.run`, 
-and `Optimal.run` all accept a graph with a genuine cycle and silently 
-return a plausible-looking answer. The file-based CLI and web UI are 
+AI, prompted to check our formalization against the actual published work,
+found the failure in this case within a minute: `Shortest.run`, `Paths.run`,
+and `Optimal.run` all accept a graph with a genuine cycle and silently
+return a plausible-looking answer. The file-based CLI and web UI are
 protected, as the parser rejects `FROM < TO` violations. The *library*
 API, on the other hand, which the "Using GraphFold as a library" section
 above tells you to use directly in Lean — does not. The soundness theorems
 (`Shortest.sound`, `Paths.sound`, `Optimal.sound`) typecheck without error
 on cyclic inputs, because `Derives`/`Satisfies` never asserted acyclicity
 in the first place. The proof isn't wrong. It just proves less than you
-think because the AI bot got the *statement* of the theorem wrong.
+think, because the AI got the *statement* of the theorem wrong.
 
 You can mostly trust vibe-coded proofs to *verify* your construction, but
-the claims that they they're actually proving are up to *you* to validate.
+the claims that they're actually proving are up to *you* to validate.
 
 A specification can have exactly the same kind of gap as an implementation.
-Curry-Howard tells us that large proofs constructions are just *software*.
+Curry-Howard tells us that large proof constructions are just *software*.
 It's thus vulnerable to oh so many other software engineering failure modes.
-Examples of incorrect theorem *statements* could include missing preconditions (as here); a false precondition, in which case anything can be proved *vacuously*,
-or a check that is correct but is never actually called (also see in this case).
+Examples of incorrect theorem *statements* could include a missing
+precondition (as here); a false precondition, in which case anything can be
+proved *vacuously*; or a check that is correct but is never actually called
+(as also seen in this case).
 
 Formally *verified* vibe-coded Lean 4 does *not* entail readiness to ship, as
 it bypasses the vital orthogonal process of *validating* what has been vibed.
@@ -666,38 +695,41 @@ specifications in higher-order type theories is now such an important skill.
 
 ### The Actual Error
 
-Further investigation shows one fundamental gap: the autoformalization of the  original publication, Mehryar Mohri's "Semiring Frameworks and Algorithms for Shortest-Distance Problems" (2002) always defines the target quantity — the
+Further investigation shows one fundamental gap: Mehryar Mohri's original
+publication, "Semiring Frameworks and Algorithms for Shortest-Distance
+Problems" (2002), always defines the target quantity — the
 shortest distance itself, for example — independently of any algorithm, as a
 sum over the actual set of paths. He only ever equates an algorithm's output
 to that target *under an explicit hypothesis* (his Corollary 2: the graph is
 acyclic).
 
 GraphFold simply lacks a formalization of that independent target and
-condition in our formalization of the abstract theory: `Core.lean`.
+that hypothesis in its formalization of the abstract theory, `Core.lean`.
 `Derives`/`Satisfies` only assert that two renderings of `specStep`'s
 recursive unfolding agree with each other — a claim about the algorithm's
 self-consistency, whereas what's needed is a proof of correctness against
-the actual,independent mathematical theory. With no independent truth,
+the actual, independent mathematical theory. With no independent truth,
 there is nothing for a cyclic input's output to be wrong *relative to*.
-The `Algebra` laws themselves are not erroneous here. The error is the
-dropping during machine formalization of an essential hypothesis. It's
+The `Algebra` laws themselves are not erroneous here. The error is that
+an essential hypothesis was dropped during machine formalization. It's
 present in the original peer-reviewed, human-derived mathematics, but
 was simply dropped by Claude when it ingested and auto-formalized that
 earlier work.
 
-This case study suggests that fatal specification errors can plaugue even
+This case study suggests that fatal specification errors can plague even
 the simplest of Lean formalizations, particularly AI-generated ones. So how
 might one, not *verify* a major claim with proof of tens of millions of lines
 of Lean code, but *validate* the proposition that the specifications of what
-is to be proved reflect that actual mathematics of the domain? Hint: it's now
+is to be proved reflect the actual mathematics of the domain? Hint: it's now
 a large-scale software engineering problem in all respects: intellectual control,
 careful modularizations, both automated and human code reviews, regression and
 other forms of testing, process quality control.
 
-The programming languages, software engineering, and AI resaerch communities
-have given us practically miraculous tools for verifying mathematical claims. Validating the claims themselves remains an unsolved problem for formal code
+The programming languages, software engineering, and AI research communities
+have given us practically miraculous tools for verifying mathematical claims.
+Validating the claims themselves remains an unsolved problem for formal code
 at scale. Indeed, building on the remarkable success in research mathematics
 applications of formal verification of very hard propositions requiring very
 large proof constructions, the problem of *validation* remains largely open.
-You built the thing right (it's proven) is *not* the same as you built the
+Building the thing right (it's proven) is *not* the same as building the
 right thing.
